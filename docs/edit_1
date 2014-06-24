@@ -1,0 +1,2415 @@
+Unix/Linux常识
+七种文件类型
+d  目录			l   符号链接
+s  套接字文件	b  块设备文件
+c  字符设备文件	p  命名管道文件
+-  普通文件
+
+/dev/null ：代表空设备文件
+>  ：代表重定向到哪里，例如：echo "123" > /home/123.txt
+1  ：表示stdout标准输出，系统默认值是1，所以">/dev/null"等同于"1>/dev/null"
+2  ：表示stderr标准错误
+&  ：表示等同于的意思，2>&1，表示2的输出重定向等同于1
+
+Unix/Linux下的常见问题及解决：
+同一路径下存在相同的文件名，但其中一个为空文件
+ls -l > a.txt
+打开a.txt会看到文件名后存在dos字符^M（ctrl + v ctrl + m 可以打出来）
+ls -l *^M* 可以匹配出这些文件来
+rm *^M*  可以删除这些文件（注意^M是ctrl + v ctrl + m 打出来的）
+
+----------------->awk
+awk '/search pattern1/{action1} /search pattern2{action2}/' file
+ls -l>t1
+ll|awk '{if($7=="24")print$9}' 
+
+**查找
+ll|awk '/Dec [0-9]*/{print$0}' #列出12月份的文件 <===> ll|grep 'Dec [0-9]*'
+
+**替换(正则表达式查找替换)
+**内置变量
+**awk操作符
+**内置字符串函数
+**输出函数printf
+**正则表达式
+**获得外部变量
+
+echo -e '包含转义序列的字符串' 如：echo -e '1\n2\n3\n' (Linux环境)
+echo  '1\n2\n3\n' (Uinx环境)
+
+awk 'NR%10==1{close(p."txt");++p}{print > p."txt"}' example
+
+awk 'NR%10==1{close("88888"p);++p}{print > "88888"p}' example
+
+awk 'NR%10==1,p=(10+NR){close("88888"p);p++}{print > "88888"p}' example
+
+echo  'woonea|aoaoaoaonebboneb:iooneii:' |awk -F'one|:' 'END{for(i=1;i<=NF;i++){print$i}}' ##awk可以同时指定多个分隔符
+
+0700000GJZZ0000007000201309142235000000
+
+awk 'NR%5==1,p =(NR+10)*10{close("0700000GJZZ0000007000201309142235000"p);++p}{print > "0700000GJZZ0000007000201309142235000"p}' example
+
+head -n 4 example | awk '{print "NR="NR,"NF="NF}'
+head -n 1 example | awk '{print "NR="NR,"NF="NF,"\n$0:" $0}'
+
+echo -e "Line1 f1 f2\nLine2 f3 f4\nLine1 f5 f6"|awk '{print "Line no:"NR",No of fields:"NF,"$0="$0,"$1="$1,"$2="$2,"$03="$3}'
+
+head -n 1 example | tr ',' ' '
+head -n 4 example |tr '', 'AAAA' | tr ',', '  '|awk '{print "NR="NR,"NF="NF}'
+
+awk工作流程是这样的：读入有'\n'换行符分割的一条记录,然后将记录按指定的域分隔符划分域,
+填充域,$0则表示所有字段,$1表示第一个字段,$n表示第n个字段,NR为当前行号,NF为当前行的字段数
+
+awk 默认以空格为分隔符,可以用-F参数指定以逗号,\或tab(\t)为分隔符,方式如下：
+awk -F ':|\|' 指定以：或者\为分隔符
+awk -F ',|\|'
+
+head -n 7 example | awk -F ',|\t|' '{print "NR="NR,"NF="NF}' 
+head -n 1 example | awk -F ',|\t|' '{print "NR="NR,"NF="NF,"\n$0:" $0}'
+
+awk 'BEGIN{}{}END{}'
+awk 'END{print NR}' example #打印example文件的行数
+**内置字符串函数
+awk内置字符串函数详解
+
+awk内置字符串函数
+
+gsub(r,s)	    在整个$0中用s替代r
+gsub(r,s,t)	    在整个t中用s替代r
+index(s,t)	    返回s中字符串t的第一位置
+length(s)	    返回s长度
+match(s,r)	    测试s是否包含匹配r的字符串
+split(s,a,fs)	在fs上将s分成序列a
+sprint(fmt,exp)	返回经fmt格式化后的exp
+sub(r,s)	    用$0中最左边最长的子串代替s
+substr(s,p)	    返回字符串s中从p开始的后缀部分
+substr(s,p,n)	返回字符串s中从p开始长度为n的后缀部分
+详细说明一下各个函数的使用方法。
+
+gsub函数有点类似于sed查找和替换。它允许替换一个字符串或字符为另一个字符串或字符，并以正则表达式的形式执行。
+第一个函数作用于记录$0，第二个gsub函数允许指定目标，然而，如果未指定目标，缺省为$0。
+
+index(s,t)函数返回目标字符串s中查询字符串t的首位置。length函数返回字符串s字符
+长度。match函数测试字符串s是否包含一个正则表达式r定义的匹配。split使用域分隔符fs将
+字符串s划分为指定序列a。sprint函数类似于printf函数(以后涉及)，返回基本输出格式fmt的
+结果字符串exp。sub(r,s)函数将用s替代$0中最左边最长的子串，该子串被(r)匹配。
+sub(s,p)返回字符串s在位置p后的后缀。substr(s,p,n)同上，并指定子串长度为n。
+现在看一看awk中这些字符串函数的功能。
+
+1.gsub
+要在整个记录中替换一个字符串为另一个，使用正则表达式格式，/目标模式/，替换模式
+/。例如改变学生序号4842到4899：
+
+$ awk 'gsub(/4842/, 4899) {print $0}' grade.txt
+J.Troll 07/99 4899 Brown-3 12 26 26
+
+2.index
+查询字符串s中t出现的第一位置。必须用双引号将字符串括起来。例如返回目标字符串
+Bunny中ny出现的第一位置，即字符个数。
+
+$ awk 'BEGIN {print index("Bunny", "ny")}' grade.txt
+4
+
+3.length
+返回所需字符串长度，例如检验字符串J.Troll返回名字及其长度，即人名构成的字符个
+数。
+
+$ awk '$1=="J.Troll" {print length($1) " "$1}' grade.txt
+7 J.Troll
+
+还有一种方法，这里字符串加双引号。
+
+$ awk 'BEGIN {print length("A FEW GOOD MEN")}'
+14
+
+4.match
+match测试目标字符串是否包含查找字符的一部分。可以对查找部分使用正则表达式,返
+回值为成功出现的字符排列数。如果未找到,返回0,第一个例子在ANCD中查找d。因其不
+存在,所以返回0。第二个例子在ANCD中查找D。因其存在,所以返回ANCD中D出现的首位
+置字符数。第三个例子在学生J.Lulu中查找u。
+
+$ awk 'BEGIN {print match("ANCD", /d/)}'
+0
+$ awk 'BEGIN {print match("ANCD", /C/)}'
+3
+$ awk '$1=="J.Lulu" {print match($1, "u")} grade.txt
+4
+
+5.split
+使用split返回字符串数组元素个数。工作方式如下：如果有一字符串,包含一指定分隔
+符-,例如AD2-KP9-JU2-LP-1,将之划分成一个数组。使用split,指定分隔符及数组名。此
+例中,命令格式为("AD2-KP9-JU2-LP-1",parts_array,"-"),split然后返回数组下标数,这
+里结果为4。
+还有一个例子使用不同的分隔符。
+
+$ awk 'BEGIN {print split("123#456#678", myarray, "#")}'
+3
+
+这个例子中,split返回数组myarray的下标数。数组myarray取值如下：
+
+Myarray[1]="123"
+Myarray[2]="456"
+Myarray[3]="789"
+
+6.sub
+使用sub发现并替换模式的第一次出现位置。字符串STR包含‘popedpopopill’,执行下
+列sub命令sub(/op/,"op",STR)。模式op第一次出现时,进行替换操作,返回结果如下：
+‘pOPedpopepill’。
+假如grade.txt文件中,学生J.Troll的记录有两个值一样,“目前级别分”与“最高级别分”。只
+改变第一个为29,第二个仍为24不动,操作命令为sub(/26/,"29",$0),只替换第一个出现
+24的位置。
+
+$ awk '$1=="J.Troll" sub(/26/, "29", $0)' grade.txt
+L.Troll 07/99 4842 Brown-3 12 29 26
+L.Transley 05/99 4712 Brown-2 12 30 28
+
+7.substr
+substr是一个很有用的函数。它按照起始位置及长度返回字符串的一部分。例子如下：
+
+$ awk '$1=="L.Transley" {print substr($1, 1,5)}' grade.txt
+L.Tan
+上面例子中,指定在域1的第一个字符开始,返回其前面5个字符。
+如果给定长度值远大于字符串长度， awk将从起始位置返回所有字符，要抽取L.Tansley的姓,只需从第3个字符开始返回长度为7。可以输入长度99,awk返回结果相同。
+
+$ awk '{$1=="L.Transley" {print substr($1, 3,99)}' grade.txt
+Transley
+
+substr的另一种形式是返回字符串后缀或指定位置后面字符。这里需要给出指定字符串及其返回字串的起始位置。例如,从文本文件中抽取姓氏,需操作域1,并从第三个字符开始：
+
+$ awk '{print substr($1, 3)}' grade.txt
+Troll
+Transley
+
+还有一个例子,在BEGIN部分定义字符串,在END部分返回从第t个字符开始抽取的子串。
+
+$ awk '{BEGIN STR="A FEW GOOD MEN"} END {print substr(STR,7)) grade.txt
+GOOD MEN
+
+8.从shell中向awk传入字符串
+awk脚本大多只有一行,其中很少是字符串表示的,这一点通过将变量传入awk命令行会变得很容易。现就其基本原理讲述一些例子。
+使用管道将字符串stand-by传入awk,返回其长度。
+
+$ echo "Stand-by" | awk '{print length($0)}'
+8
+
+设置文件名为一变量,管道输出到awk,返回不带扩展名的文件名。
+
+$ STR="mydoc.txt"
+$ echo $STR | awk '{print subst($STR, 1, 5)}'
+mydoc
+
+设置文件名为一变量,管道输出到awk,只返回其扩展名。
+$ STR="mydoc.txt"
+$ echo $STR | awk '{print substr($STR, 7)}'
+txt
+
+
+***获得外部变量
+
+1、获得普通外部变量
+$ test='awk code'                            
+$ echo | awk  '{print test}' test="$test"
+awk code
+$ echo | awk  test="$test" '{print test}' 
+awk: cmd. line:1: fatal: cannot open file '{print test}' for reading (No such file or directory)
+
+ 
+格式如：awk '{action}'  变量名=变量值，这样传入变量，可以在action中获得值.注意：变量名与值放到'{action}'后面。
+
+$ echo | awk  'BEGIN{print test}' test="$test"         
+
+这种变量在：BEGIN的action不能获得。
+
+2.BEGIN程序块中变量
+
+$ test='awk code'                                 
+$ echo | awk -v test="$test" 'BEGIN{print test}'
+awk code
+$ echo | awk -v test="$test" '{print test}'
+awk code
+
+ 
+
+格式如：awk –v 变量名=变量值 [–v 变量2=值2 …] 'BEGIN{action' 注意：用-v传入变量可以在3中类型的action中都可以获得到，
+但顺序在  action前面。  
+
+3.获得环境变量
+
+$ awk  'BEGIN{for (i in ENVIRON) {print i"="ENVIRON[i];}}'
+AWKPATH=.:/usr/share/awk
+SSH_ASKPASS=/usr/libexec/openssh/gnome-ssh-askpass
+SELINUX_LEVEL_REQUESTED=
+SELINUX_ROLE_REQUESTED=
+LANG=en_US.UTF-8
+.......
+
+只需要调用：awk内置变量 ENVIRON,就可以直接获得环境变量。它是一个字典数组。环境变量名 就是它的键值。
+
+
+1)删除行首的空格和制表符
+awk '{ sub(/^[ \t]+/,""); print }' <t2 #删除t2文件中行首的空格或者制表符
+
+2)将前两个字段倒序输出
+awk '{ print $2, $1 }' file
+
+3)将每行里面的前两个字段交换位置
+awk '{ temp = $1; $1 = $2; $2 = temp; print }' test1
+因为要输出整行，只好重新给$1和$2赋值，用个临时变量做中转。
+
+4)删除每行的第二个字
+awk '{ $2 = ""; print }' t2
+就是把第二个字段赋值为空字符串
+
+5)把每行的所有字段倒序输出
+awk '{ for (i=NF; i>0; i--) printf("%s ", $i); printf ("\n") }'
+
+6)删除连续的重复行
+awk 'a != $0; { a = $0 }'
+前一句省略了action，选择输出整行内容与a不一样的；后一句省略了pattern，把当前行的内容赋值给a
+a在这个例子中的左右是记录上一行的内容。
+
+7)删除非连续的重复行
+awk '!a[$0]++'
+这一句真是很有ee的风范！把当前行的内容作为数组a的索引，如果a里面已经有了$0的记录，即遇到了重复，pattern的值为0，不输出。
+
+**正则表达式
+
+$ awk '/^(no|so)/' test-----打印所有以模式no或so开头的行。
+$ awk '/^[ns]/{print $1}' test-----如果记录以n或s开头，就打印这个记录。
+$ awk '$1 ~/[0-9][0-9]$/{print $1}' test-----如果第一个域以两个数字结束就打印这个记录。
+$ awk '$1 == 100 || $2 < 50' test-----如果第一个或等于100或者第二个域小于50，则打印该行。
+$ awk '$1 != 10' test-----如果第一个域不等于10就打印该行。
+$ awk '/test/{print $1 + 10}' test-----如果记录包含正则表达式test，则第一个域加10并打印出来。
+$ awk '{print ($1 > 5 ? "ok "$1: "error"$1)}' test-----如果第一个域大于5则打印问号后面的表达式值，
+	否则打印冒号后面的表达式值。
+$ awk '/^root/,/^mysql/' test----打印以正则表达式root开头的记录到以正则表达式mysql开头的记录范围内的所有记录。
+	如果找到一个新的正则表达式root开头的记录，则继续打印直到下一个以正则表达式mysql开头的记录为止，或到文件末尾。
+
+
+##################################
+
+tar -tf etc.tar #列出归档文件内容
+tar -xvf etc.tar file1 file2 #只提取归档文件etc.tar中的file1,file2文件
+
+zip压缩文件：
+zip file.zip file
+压缩指定目录下的所有文件
+zip -r folder.zip folder # r用于递归指定操作
+
+echo 'this is line from sentence' | rev |tr ' ' '\n' | tac | tr '\n' ' ' | rev #ksh下没有tac命令
+
+tac <=> awk '{buffer[NR]=$0;} END {for(i=NR;i>0;i--) {print buffer[i]}}' fileName
+
+cat 通常用于读取、显示或连接文件内容（合并文件）。
+1.用cat将输入文件的内容与标准输入拼接在一起
+echo 'text through stdin' | cat - file.txt # - 被作为来自sdtin文件的文本名
+2.压缩文件的空白行
+cat -s file  <=> cat file | tr -s '\n'
+
+xargs
+1.将多行输入转行为单行输出
+cat example.txt | xargs
+2.将单行输入转换为多行输出
+cat example.txt | xargs -n 3 #-n 指定每行输出的参数个数,空格是默认的界定符
+
+ls $2|grep VG|xargs -n1 cat|awk -F, 'NF==113{print $0}' > templefile.0
+
+spool/sqlldr(导出、导入数据)
+
+spool:
+spool常用的设置 
+set colsep' ';　　　 //域输出分隔符 
+set echo off;　　　　//显示start启动的脚本中的每个sql命令,缺省为on 
+set feedback off;　　//回显本次sql命令处理的记录条数,缺省为on 
+set heading off;　　 //输出域标题,缺省为on 
+set pagesize 0;　　　//输出每页行数,缺省为24,为了避免分页,可设定为0。 
+set termout off;　　 //显示脚本中的命令的执行结果,缺省为on 
+set trimout on;　　　//去除标准输出每行的拖尾空格,缺省为off 
+set trimspool on;　　//去除重定向（spool）输出每行的拖尾空格,缺省为off 
+
+导出文本数据的建议格式： 
+SQL*PLUS环境设置SET NEWPAGE NONE 
+                SET HEADING OFF 
+                SET SPACE 0 
+                SET PAGESIZE 0 
+                SET TRIMOUT ON 
+                SET TRIMSPOOL ON 
+                SET LINESIZE 2500 
+例如：
+sqlplus -s UCR_PARAM/bjc_acctUCR_PARAMbee@bjh_act <<EOF >/dev/null
+set echo off
+set feedback off
+set heading off
+set pagesize 0
+set newpage 0
+set linesize 4096
+set termout off
+set trims on
+set trimout on
+set wrap off
+set trimspool on
+spool /bill/billdata1/pp_yw/std/sms01/sm100.txt;
+
+select trim(source_type)||','||trim(biz_type)||','||FID||','||RR_FLAG||','||SMS_SEQ
+||','||call_type||','||USER_TYPE||','||B_USER_TYPE||','||IMSI_NUMBER
+||','||MSISDN||','||''||','||OTHER_PARTY||','||''
+||','||SP_CODE||','||SERVICE_CODE||','||OPER_CODE||','||CFEE_TYPE
+||','||CHARGE_TYPE||','||BFEE||','||IFEE||','||MFEE
+||','||GFEE||','||MNS_TYPE||','||SEND_STATUS||','||PRIORITY||','||INFO_LEN||','||HOME_AREA_CODE
+||','||CALLED_HOME_CODE||','||ISMG_CODE||','||FORW_ISMG||','||SMSC_CODE
+||','||IMEI||','||APPLY_DATE||','||APPLY_TIME
+||','||FINISH_DATE||','||FINISH_TIME||','||FILE_NO||','||RATE_TIMES||','||ERROR_CODE
+||','||RESERVER1||','||RESERVER2||','||RESERVER3||','||RESERVER4
+||','||RESERVER5||','||RESERVER6||','||RESERVER7||','||RESERVER8
+from bing_tg_cdr09_sm ; 
+
+spool off;
+exit
+EOF
+
+sqlplus常见错误：
+SP2-0027: 输入太长 (> 2499 个字符) - 行已忽略
+原因及解决方法：出现这种错误的原因是文件中的sql语句过长（如上边的select语句字符数超过了某个数值），可以在sql语句中插入
+一个或多个回车进行换行。
+
+注意：生产的文件可能会包含很多空格,可以用vim 或者sed、tr命令去掉文件中的空格。
+
+file -Lz * | grep ASCII | cut -d":" -f1 | xargs ls -ltr
+
+sqlldr导入数据：
+sqlldr ucr_sd01/ucr_sd01@yzbillin control=bill_user.ctl rows= 1000 #bill_user.ctl为控制文件
+
+**常见错误
+ SQL*Loader-605 错误 ：表空间不足，加表空间即可解决问题
+
+#bill_user.ctl
+load data
+infile "/billing2/wang/gucb/BILL_USER_SUM1_12"   # BILL_USER_SUM1_12为控制文件目录下的 .dat文件
+append into table BILL_USER_SUM1_12
+fields terminated by "," TRAILING NULLCOLS
+(
+USERID 		,
+TPOBJID 	,
+BILLID 		,
+VALUE 		,
+MAXVALUE )
+
+##BILL_USER_SUM1_12为/billing2/wang/gucb/目录下的一个BILL_USER_SUM1_12文件
+##表BILL_USER_SUM1_12必须在数据库中已经存在
+create table BILL_USER_SUM1_12
+(
+ 
+  USERID          NUMBER(16) not null,
+  TPOBJID    	NUMBER(16) not null,
+  BILLID      	 NUMBER(8) not null,
+  VALUE     	 NUMBER(16) not null,
+  MAXVALUE     	 NUMBER(16) not null
+);
+
+
+cut是一个选取命令,就是将一段数据经过分析,取出我们想要的。一般来说,选取信息通常是针对“行”来进行分析的,
+并不是整篇信息分析的
+
+ls SMP* |xargs -n1 cat |wc -l
+
+
+ls|xargs -i sh -c "tr -d ' ' < {} > {}.modify"
+
+ 加-i 参数直接用 {}就能代替管道之前的标准输出的内容； 加 -I 参数 需要事先指定替换字符
+
+td_national_fee_code
+
+select * from bill_user_sum1_09 where userid = '4142488511690450';
+
+delete from bill_user_sum1_09 t where t.billid in (22351,22009,22008 );
+
+split -l 1000 gprs_roam_type_386 0100010GJSJ0000001002013092011000000010
+echo "正在重命名文件"
+ls 0100010GJSJ0000001002013092011000000010*|awk '{{printf "mv %s %s", $0, substr($0,1,length($0)-2)}{for(i=1;i<=4-length(NR);i++) printf "0"}{print NR}}'|xargs -i sh -c "{}"
+echo "正在移动到指定目录"
+ls *0100010GJSJ0000001002013092011000000010|xargs -i mv ./{} ${BOSS_DATA1}/pp_yw/std/gprs01/{}
+
+------------awk练习：
+
+example.txt
+
+user1,password1,username1,unit1,10
+user2,password2,username2,unit2,20
+user3,password3,username3,unit3,30  
+                         
+awk -F, '{print$1}' example.txt
+
+awk -F, '{if($5 > 20){print$0}}' example.txt
+
+awk -F, '{if($5 > 20 || $5==10){print$0}}' example.txt
+
+awk -F, 'BEGIN{sum = 0}{sum = sum + $5}END{printf"%d\n",sum}' example.txt
+
+ls 0100010GJSJ0000001002013092011000000010*|awk '{{printf "mv %s %s", $0, :length($0)-2)}{for(i=1;i<=4-length(NR);i++) printf "0"}{print NR}}'|xargs -i sh -c "{}"
+
+列出文件中的指定行
+cat example.txt|awk 'NR<=3&&NR>=2'
+(awk 'NR<=3&&NR>=2' < example.txt)
+awk 'NR<=3&&NR>=2' < example.txt >test1.txt
+
+awk 'NR<=3&&NR%2==0' < example.txt
+<==> <example.txt sed -n '2,3p'
+
+ls|awk -F. '{printf "mv %s %s.1309.%s", $0, $1, $3}'|xargs -i sh -c "{}"
+
+ls GPP*|awk -F. '{printf "mv %s %s.1309.%s\n", $0, $1, $3}' >>gu.sh 
+chmod 777 gu.sh
+gu.sh 
+
+-------------------->vi (vim)
+
+打开vim帮助文档
+:h:g 打开vim g命令的帮助文档
+:q 关闭帮助文档
+
+自动补全 Ctrl + p
+
+新建标签页 alt + t <===> :tabnew
+:!(Linux/Unix/Windows)command 调用系统命令
+:r !(Linux/Unix/Windows)command 调用系统命令，并将命令返回的结果插入到当前文件中
+如：:!ping www.baidu.com 
+	:r !ping www.baidu.com
+
+vim的替换模式：
+r #替换单个字符 
+R #替换多个字符
+
+G 光标到最后一行
+1G 光标到第一行,nG光标到第n行。<===> :1,:n
+显示行号 :set nu
+dd 删除当前行,2dd删除当前和后边的两行,ndd删除n行
+D 删除从当前光标到光标所在行尾的内容 <===>d$
+d0 删除从当前光标到光标所在行首的内容
+
+**交换文件中的相邻的两行、两个单词、两个字符
+ddp #交换两行
+dwp #交换两个单词
+xp  #交换两个字符
+
+
+按单词移动：
+w 到下一个单词的开头
+b 到上一个单词的开头
+e 到下一个单词的结尾
+H 到当前屏幕的第一行
+M 到当前屏幕的中间一行
+L 到当前屏幕的最后一行
+注：如果认为单词是由blank字符分隔符,那么需要使用大写的E和W
+
+0 到行头
+$ 到行尾
+^ 到本行的第一个非blank字符
+g_ 到本行最后一个不是blank字符的位置
+fa 到下一个为字符a的字符处,f6 到下一个字符为6的字符处
+t, 到逗号前的第一个字符。逗号可以变成其它字符
+3fa 在当前行查找第三个出现的a。
+F 和 T  和 f 和 t 一样,只不过是相反方向。
+dt"  删除所有的内容,直到遇到双引号—— "
+dw 删除光标所在的单词(字符串)
+d0 删除从当前光标到光标所在行首的内容
+) 移动光标到下一个句子
+( 移动光标到上一个句子
+* 读取光标处的字符串,并且移动光标到它再次出现的地方(当光标停留在某个单词上时, 输入这
+  条命令表示查找与该单词匹配的下(上)一个单词. 同样, 再输入 n 查找下一个匹配处, 输入 N 反方向查找)
+# 和上面的类似,但是是往反方向寻找
+. 重复上一次使用过的命令,3. 重复3次上次使用过的命令
+
+/text 从当前光标处开始搜索字符串 text,并且到达 text 出现的地方。必须使用回车来开始这个搜索命令,如果
+想重复上次的搜索的话,按 n。(支持正则表达式搜索)
+？text 和上面类似,但是是反方向
+ma 在当前光标的位置标记一个书签,名字为 a。书签名只能是小写字母。你看不见书签的存在,但它确实已经在那里了。
+`a 到书签 a 处。注意这个不是单引号,它一般位于大部分键盘的 1 的左边。
+`. 到你上次编辑文件的地方。这个命令很有用,而且你不用自己去标记它。
+'' 移动光标到上一个标记处, 比如用 gd, * 等查找到某个单词后, 再输入此命令则回到上次停留的位置
+'. 移动光标到上一次的修改行
+
+vim 取消搜索后的高亮显示 :nohl
+
+TAB
+<<                  输入此命令则光标所在行向左移动一个 tab
+>>                  输入此命令则光标所在行向右移动一个 tab
+5>>                 输入此命令则光标后 5 行向右移动一个 tab
+:12,24>             此命令将12行到14行的数据都向右移动一个 tab
+:12,24>>            此命令将12行到14行的数据都向右移动两个 tab
+:12,24<             此命令将12行到14行的数据都向左移动一个 tab
+
+vim 的插入模式
+i 在当前字符的左边插入
+I 在当前行首插入
+a 在当前字符的右边插入
+A 在当前行尾插入
+o 在当前行下面插入一个新行
+O 在当前行上面插入一个新行
+c{motion} 删除 motion 命令跨过的字符,并且进入插入模式。比如：c$,这将会删除从光标位置到行尾的字符并且进入插入模式。
+ct！,这会删除从光标位置到下一个叹号（但不包括）,然后进入插入模式。被删除的字符被存在了剪贴板里面,并且可以再粘贴出来。
+d{motion}：和上面差不多,但是不进入插入模式
+
+
+大小写转换：
+<C-v>(windows下为<C-q> 或者 v)进入视图模式,移动上下左右建（hjkl）选中要转换的字符
+1、整篇文章大写转化为小写
+  打开文件后,无须进入命令行模式。键入:ggguG 
+
+解释一下：ggguG分作三段gg gu G
+gg=光标到文件第一个字符
+gu=把选定范围全部小写
+G=到文件结束
+2、整篇文章小写转化为大写
+  打开文件后,无须进入命令行模式。键入:gggUG 
+
+解释：gggUG分作三段gg gU G
+gg=光标到文件第一个字符
+gU=把选定范围全部大写
+G=到文件结束
+3、只转化某个单词
+guw 、gue
+gUw、gUe
+这样,光标后面的单词便会进行大小写转换
+想转换5个单词的命令如下：
+gu5w、gu5e
+gU5w、gU5e
+4、转换几行的大小写
+将光标定位到想转换的行上,键入：1gU 从光标所在行 往下一行都进行小写到大写的转换
+10gU,则进行11行小写到大写的转换
+以此类推,就出现其他的大小写转换命令
+gU0  ：从光标所在位置到行首,都变为大写
+gU$  ：从光标所在位置到行尾,都变为大写
+gUG  ：从光标所在位置到文章最后一个字符,都变为大写
+gU1G ：从光标所在位置到文章第一个字符,都变为大写
+
+正则表达式替换:
+
+元字符      说明
+.      匹配任意一个字符
+[abc]  匹配方括号中的任意一个字符。可以使用-表示字符范围,
+       如[a-z0-9]匹配小写字母和阿拉伯数字。
+[^abc] 在方括号内开头使用^符号,表示匹配除方括号中字符之外的任意字符。
+\d     匹配阿拉伯数字,等同于[0-9]。
+\D     匹配阿拉伯数字之外的任意字符,等同于[^0-9]。
+\x     匹配十六进制数字,等同于[0-9A-Fa-f]。
+\X     匹配十六进制数字之外的字符,等同于[^0-9A-Fa-f]。
+\w     匹配单词字母,等同于[0-9A-Za-z_]。
+\W     匹配单词字母之外的任意字符,等同于[^0-9A-Za-z_]。
+\t     匹配<TAB>字符。
+\s     匹配空白字符,等同于[ \t]。
+\S     匹配非空白字符,等同于[^ \t]。
+\a     所有的字母字符. 等同于[a-zA-Z]
+\l     小写字母 [a-z]
+\L     非小写字母 [^a-z]
+\u     大写字母 [A-Z]
+\U     非大写字母 [^A-Z]
+
+表示数量的元字符
+元字符    说明
+*      匹配0-任意个 例如匹配所有字符 .*
+\+     匹配1-任意个
+\?     匹配0-1个
+\{n,m} 匹配n-m个
+\{n}   匹配n个
+\{n,}  匹配n-任意个
+\{,m}  匹配0-m个
+\_.    匹配包含换行在内的所有字符
+\{-}   表示前一个字符可出现零次或多次,但在整个正则表达式可以匹配成功的前提下,匹配的字符数越少越好
+\=     匹配一个可有可无的项
+\_s    匹配空格或断行
+\_[]
+ 
+元字符 说明
+\* 匹配 * 字符。
+\. 匹配 . 字符。
+\/ 匹配 / 字符。
+\\ 匹配 \ 字符。
+\[ 匹配 [ 字符。
+ 
+表示位置的符号
+元字符 说明
+$ 匹配行尾
+^ 匹配行首
+\< 匹配单词词首
+\> 匹配单词词尾
+例如：\<cat 匹配以cat开头的单词,\cat> 匹配以cat结尾的单词,\<cat\> 匹配单词cat
+ 
+替换变量
+在正则表达式中使用 \( 和 \) 符号括起正则表达式,即可在后面使用\1、\2等变量来访问 \( 和 \) 中的内容。
+ 
+懒惰模式
+\{-n,m} 与\{n,m}一样,尽可能少次数地重复
+\{-} 匹配它前面的项一次或0次, 尽可能地少
+\| "或"操作符
+\& 并列
+
+
+:%s /201309\([0-9]*\)/20130920/g
+##:%s /20130920\([0-9]*\)/20130920/g
+:%s/\n/,/g #将文件中的列变行并以空格做分隔符
+:%s/,/\r/g #行变列（windows下的gvim适用,unix下肯定不行）
+:%s/[0-9]*:[0-9]*:[0-9]*//g 替换掉时间
+%s/\(\'[0-9]*\)[ ]*/\1/g   '36    ' ---> '36'
+%s/\([0-9]*\)\/\([0-9]*\)\/\([0-9]*\)/\1\2\3000000/g
+%s/^$/20010101000000/g
+%s/\([0-9]*\)/0\1/g
+%s/ \+'/'/g
+%s/：[^']*'/'/g
+%s/:[^']*'/'/g
+%s/\(\<[a-zA-Z_0-9]*\>\)/trim\(\1\)/g
+%s/\([a-zA-Z]\{1\}\)6/\18/g
+
+1.要求文件中的(E:\Work\test6)
+2013/8/2 替换为   20130802000000
+2013/11/2 替换为  20131102000000
+2013/11/12 替换为 20131112000000
+2013/1/22 替换为  20130122000000
+空白行  替换为    20010101000000
+
+%s/\([0-9]\{4}\)\/\([0-9]\{1}\)\/\([0-9]\{1}\)$/\10\20\3000000/g
+%s/\([0-9]\{4}\)\/\([0-9]\{2}\)\/\([0-9]\{1}\)$/\1\20\3000000/g
+%s/\([0-9]\{4}\)\/\([0-9]\{1}\)\/\([0-9]\{2}\)$/\10\2\3000000/g
+%s/\([0-9]\{4}\)\/\([0-9]\{2}\)\/\([0-9]\{2}\)$/\1\2\3000000/g
+%s/^$/20010101000000/g
+注意后边的$,如果没有就会出现201301022000000 的情况
+
+替换指定行
+:101,104s/word1/word2/g
+
+
+将多个空格替换成一个空格
+:%s/ */ /g
+
+删除所有空行
+:g/^$/d
+
+使用空格替换句号或者冒号后的一个或者多个空格
+:%s/\([:.]\) */\1 /g
+
+在指定行前加入注释符//
+:2,3s/^/\/\//g
+从当前位置开始拷贝到单词的结束
+ye
+从当前位置开始拷贝到本行的结束
+y$
+拷贝整行
+0y$ 或者 yy
+拷贝25-176行
+25Gy176G
+拷贝全部内容
+ggyG
+
+**global命令
+帮助命令 :h :g 可以看到global命令的格式是
+:[range]g[lobal]/{parrtern}/[cmd]
+:[range]g[lobal]!/{parrtern}/[cmd]
+:[range]vg[lobal]/{parrtern}/[cmd]
+global命令在[range]指定的文本范围内（缺省为整个文件）查找{pattern}，然后对匹
+配到的行执行命令{command}，如果希望对没匹配上的行执行命令，则使用global!或vg
+lobal命令
+
+经典示例：
+1.倒序文件内容
+:g/^/m 0
+###解释：这条命令用行首标记/^/匹配文件的所有行（这是查找的一个常用技巧，如果用/./则是匹配非空行，不满足本例要求），
+然后用move命令依次将每行移到第一行（第0行的下一行），从而实现了倒序功能。
+   global命令实际上是分成两步执行：首先扫描[range]指定范围内的所有行，给匹配{pattern}的行打上标记；然后依次对打有标记的
+行执行{command}命令，如果被标记的行在对之前匹配行的命令操作中被删除、移动或合并，则其标记自动消失，而不对该行执行
+{command}命令
+
+2.删除偶数行
+:g/^/+1 d
+3.删除所有奇数行
+:g/^/d|m.
+2.删除文件中的空白行
+:g/^$/d
+
+
+在vi里面更方便的删除一段内容
+首先在需要删除行的头部,mark为ma,然后下移或上移到删除行的行尾,在命令模式输入  d'a
+
+1.复制多行
+任务：将第9行至第15行的数据，复制到第16行
+方法1：（强烈推荐）
+：9，15 copy 16  或 ：9，15 co 16
+2.移动一行或多行
+: 2 move 12 或 ：2 m 12 将第二行移动到十二行处
+：9，15 move 16  或 :9,15 m 16 将第9行到第15行的文本内容到第16行的后面 
+
+2.将其他文件的内容插入到当前文件中
+： r /../other_fileName
+
+删除文件中的所有内容
+ggdG
+选中全文(全选)
+ggVG
+
+格式化代码
+gg=G
+合并两行
+J(移动光标到前一行的行尾，按下J)
+合并多行：
+Ctrl-Q 移动光标 按下J  ##没有最快，只有更快
+
+vim 排序
+如，将下边的数据按第三个字段排序
+|1 | 11 | 222| 1111|
+|2 | 22 | 111| 2222|
+:sort /|[^|]\+|[^|]\+\s*/
+
+vim分割屏幕：
+**A.分屏启动vim
+1.使用大写的O参数来垂直分屏。
+	vim -On file1 file2 ...
+2.使用小写的o参数来水平分屏。
+	vim -on file1 file2 ...
+注意：n是数字,表示分成几个屏。
+
+**B.关闭分屏 
+1.关闭当前窗口。
+Ctrl+W c
+2.关闭当前窗口,如果只剩最后一个了,则退出Vim。
+Ctrl+W q
+
+**C.分屏
+1.上下分割当前打开的文件 Ctrl + W s
+2.左右分割当前打开的文件 Ctrl + W v
+3.上下分割,并打开一个新文件  :sp filename
+4.左右分割,并打开一个新文件  :vsp filename
+
+**D.移动光标
+1.Vi中的光标键是h, j, k, l,要在各个屏间切换,只需要先按一下Ctrl+W
+
+**E.屏幕尺寸
+下面是改变尺寸的一些操作,主要是高度,对于宽度你可以使用Ctrl+W <或是>,但这可能需要最新的版本才支持。
+
+1.让所有的屏都有一样的高度 Ctrl+W =
+2.增加高度 Ctrl+W +
+3.减少高度 Ctrl+W -
+注意：只按一次Ctrl + W + 屏幕增加的幅度很小,但是重复按会很浪费时间,所以用 n(数字) + Ctrl + W  + 的方式 ,
+或者直接用鼠标拖动（支持鼠标操作的时候）
+
+
+***vim个性配置
+设置字体
+打开_vimrc
+添加 set guifont=courier_new:h11  "设置字体为Courier New 
+set nu "显示行号
+
+***vim自定义快捷键
+map P I#<ESC>
+将P（shift + p） 设置为注释一行的快捷键
+用ab命令实现快速输入
+在配置文件中添加
+ab mymail sd-guchuanbing@sdcncsi.com.cn 
+在编辑文本的时候只需要键入mymail 就可以插入邮箱地址了
+
+
+***vim文本加密
+在命令模式下
+:X
+然后输入密码
+
+Vim中快速插入序列
+例如,在第5行文本后面插入一个序列10到20
+
+方法1
+将光标移动到第5行,在命令模式下输入
+11o<ESC>(插入11个空行)
+:let i=10|g/\%>5l\%<17l/s/^/\=i/|let i+=1 
+(\%>5l\%<17l 意思是从第6行到16行）
+
+如果想让内容在一行上,那么就将光标移到第6后,然后在命令模式下输入11J即可。
+
+方法2
+1）在Vim中键入1.
+2）在1所在行,yy,100p。
+3）进入命令行模式,输入如下命令：
+   let i=1|g/1/s//\=i/|let i=i+1
+
+解释：
+    1/     代表查找1
+    s/     代表替换后的新字符就在这个位置
+    /      就代表后面跟的是新的字符内容
+    \=i    \=是把后面的字符串当成表达式来对待,在这里就是i的值
+    |      (逻辑或的符号)用以连接三个语句
+
+vim有趣的命令
+:h!
+:h 42
+
+***历史命令
+以:和/开头的命令都有历史纪录，可以首先键入:或/然后按上下箭头来选择某个历史命令
+q: 进入命令历史编辑。
+类似的还有 q/ 可以进入搜索历史编辑。
+注意 q 后面如果跟随其它字母，是进入命令记录。
+
+可以像编辑缓冲区一样编辑某个命令，然后回车执行。
+也可以用 ctrl-c 退出历史编辑，但此时历史编辑窗口不关闭，可以参照之前的命令再自己输入。
+用 :x 关闭历史编辑并放弃编辑结果，也可以在空命令上回车相当于退出。
+
+vimgrep命令：
+虽然名字看起来和grep很像，但是用法还是不一样的，先来看一下普通的查找:
+:vimgrep /an error/ *.c
+而如果需要循环遍历所有子目录的话，语法如下:
+:vimgrep /an error/ **/*
+搜索到的文件列表会加入到quickfix中去，执行:
+:copen
+#虽然不如Linux/Unix上的grep效率高，单也凑合着用
+
+vim插件使用：
+1)Voom
+启用Voom插件方式 :Voom #注意V是大写的
+:se fdm=indent
+:se fcd=4
+
+****Vim脚本基础
+Vim 中使用如下的语法对变量进行赋值（创建变量）：
+	let 变量名 = 数值
+变量类型有两种，整数和字符串，在第一次赋值之前都不能使用。变量名除了可使用常规的字母、下划线和数字外，
+还可以使用几种特殊的前缀：
+●“b:”——只对当前缓冲区（buffer）有效的变量；
+●“w:”——只对当前编辑窗口（window）有效的变量。
+●“g:”——全局变量（在函数中访问全局变量必须使用该前缀，不加前缀的话则认为是函数内的局部变量）；
+●“s:”——变量名只在当前脚本中有效；
+●“a:”——函数的参数；
+●“v:”——Vim 内部预定义的特殊变量（参见“:help vim-variable”）。
+下面三个前缀用来访问特殊的数值，由于行为和变量较为相似（可以读取和修改），也放在这儿一起讲：
+●“$”——访问环境变量；
+●“&”——访问 Vim 选项；
+●“@”——访问寄存器。
+当变量不再使用时，可以使用“unlet 变量名”删除变量
+
+***Vim 宏记录
+  所谓宏记录，就是说vim会记录下你所执行的一个操作序列，然后你可以在记录完成后的任意时间(Normal模式下)一键重复这个操作流。
+  例：将
+  123
+  456
+  789
+  ...  
+  变成
+  '123',
+  '456',
+  '789',
+  ...
+  gg  #光标到首行首个字符
+  qa ##开始宏录制
+  i'  #插入模式下输入'
+  ESC 
+  $a',
+  ESC
+  j0
+  q #结束宏记录
+  2@a #播放宏
+ 
+ 例2:生成1-100的数字序列
+  1<ESC>qayyp<C-A>q98@a
+
+--------------------->sed
+
+pets.txt:
+
+This is my cat
+  my cat's name is betty
+This is my dog
+  my dog's name is frank
+This is my fish
+  my fish's name is george
+This is my goat
+  my goat's name is adam
+  
+1.将my替换为 Bazar's 
+sed "s/my/Bazar's/g" pets.txt
+或者 sed "s/my/Bazar's/g" pets.txt > pets1.txt
+
+2.在每行前面加#
+sed 's/^/#/g' pets.txt
+
+3.在每行后面加---
+sed 's/$/---/g' pets.txt
+
+4.只替换第3行的内容
+sed '3s/my/your/g' pets.txt行的文本
+
+5.替换3到6行的文本
+sed '3,6s/my/your/g' pets.txt
+(sed "3,6s/my/Tim's/g" pets.txt)
+
+
+html.txt:
+
+<b>This</b> is what <span style="text-decoration: underline;">I</span> meant. Understand?
+
+1.去掉html中的tags
+sed 's/<[^>]*>//g' html.txt
+
+$ cat my.txt
+This is my cat, my cat's name is betty
+This is my dog, my dog's name is frank
+This is my fish, my fish's name is george
+This is my goat, my goat's name is adam
+
+1.只替换每行的第一个s
+sed 's/s/S/1' my.txt
+
+2.只替换没行的第二个S
+sed 's/s/S/2' my.txt
+
+3.只替换每一行的第3个以后的s
+sed 's/s/S/3g' my.txt
+
+**多个匹配
+4.把第一到三行的my替换成your,第三行以后的this换成That
+sed '1,3s/my/your/g;3,$s/This/That/g' my.txt
+<==> sed -e '1,3s/my/your/g' -e '3,$s/This/That/g' < my.txt
+
+5.用&来当做被匹配的变量,然后可以在基本左右加点东西
+sed 's/my/[&]/g' < my.txt
+
+**圆括号匹配
+使用圆括号匹配的示例：（圆括号括起来的正则表达式所匹配的字符串会可以
+当成变量来使用,sed中使用的是\1,\2…）
+
+sed 's/This is my \([^,]*\),.*is \(.*\)/\1:\2/g' my.txt
+sed 's/This is my \([^,]*\),.*is \(.*\)/\2 is \1/g' my.txt
+
+***导入数据时会遇到的问题
+insert into TF_F_USER_serv ---> insert into ucr_act1.bj31_TF_F_USER_serv
+
+sed 's/insert into \(.*\)/insert into ucr_act1.bj31_\1/g' test2.sql
+
+ls *.sql | xargs -i sh -c "sed 's/insert into \(.*\)/insert into ucr_act1.bj31_\1/g'<{}>{}.modified"
+
+** sed的命令
+A. N 命令
+  把下一行的内容纳入当前缓冲区做匹配
+sed 'N;s/my/your/' pets.txt
+sed 'N;s/\n/,/' pets.txt
+
+B.a命令和i命令
+  a命令就是append, i命令就是insert,它们是用来添加行的
+sed "$a This is my monkey, my monkey’s name is wukong" my.txt
+
+C. p命令
+匹配fish并输出
+sed '/fish/p' pets.txt
+  可以看到fish的那一行被打了两遍,这是因为sed#默认情况下,sed把所有输入行都打印在标准输出上。
+  如果某行匹配模式fish,p命令将把该行另外打印一遍
+sed -n '/fish/p' pets.txt
+#选项-n取消sed默认的打印,p命令把匹配模式my的行打印一遍.
+<==> <my.txt grep "fish"
+<==> <my.txt awk -F, '/fish/{print$0}'
+
+# 从一个模式到另一个模式
+sed -n '/dog/,/fish/p' my.txt
+
+#从第一行打印到匹配fish成功的那一行
+sed -n '1,/fish/p' my.txt
+
+D. d命令  删除匹配行
+1.删除匹配fish的行
+sed '/fish/d' my.txt
+
+2.删除空白行
+sed '/^$/d' my.txt
+vim中删除空白行 :g/^$/d
+或者用tr命令
+echo "1\n\n2" | tr -s ["\n"]  or echo "1\n\n2" | tr -s ["\012"]
+
+**命令打包(unix 下没有成功使用)
+第二个是cmd可以是多个,它们可以用分号分开,可以用大括号括起来作为嵌套命令
+
+1.对3行到第6行,执行命令/This/d
+sed '3,6 {/This/d}' my.txt
+
+2.对3行到第6行,匹配/This/成功后,再匹配/fish/,成功后执行d命令
+ 
+**sed 正则表达式
+sed 's/string dbpass=\"[^"]*\"/string dbpass=\"ucr_err_hen01\"/g' < test.cpp > test1.cpp;
+cat example.txt 
+pattern aaa hello 
+pattern zzz world
+hhhhhh  aaa ccc
+
+sed '/pattern/s/aaa/bbb/g' < example.txt
+sed '/\([a-z]{1}\)*/s/aaa/bbb/g' < example.txt #匹配重复字符串，在有重复字符串，并且有 aaa 的行中，将aaa 替换为bbb
+sed '1~2///g' < filename #sed 可以指定替换的步长 （每隔一行进行替换）
+sed -f s_file example.txt # s_file是sed 替换规则
+
+----------------->ls
+ls -lrt 按时间顺序显示文件
+ls -F1 #文件和目录，且目录后会跟一个/来区分
+ls -F1 .|grep -v /|awk '{print "mv "substr($1,1,52)" "substr($1,2,51)}'|xargs -i sh -c "{}"
+
+
+---------------->tail
+tail -f xxx.log 实时输出日志 
+
+-----------------> cut
+cut命令用于从文件或者标准输入中读取内容并截取每一行的特定部分并送到标准输出。
+截取的方式有三种,一是按照字符位置,二是按照字节位置,三是使用一个分隔符将一行分割
+成多个field,并提取指定的fields。
+
+cut命令有5个参数,其中-c,-b,-f分别表示"character", "byte"以及"field"截取方式。
+当采用field模式截取时,需要用"-d"参数指定一个分隔符,分割符只能为单个字符。另外
+还有一个"-s",suppress,表示如果行中没有给出的分割符则不输出该行（默认为如果没有
+分隔符则将该行原封不动输出）
+
+cut [options] file
+参数：b,c,f
+
+1.输出文件中的指定列
+<test cut -f 43 -d, <==>   <test awk -F, '{print$43}'
+whoami|cut -c 8
+
+---paste 按列拼接
+参数：
+-d 指定不同于空格或tab键的域分隔符,例如用@分隔域,使用- d @
+-s 将每个文件合并成行而不是按行粘贴
+
+paste file1 file2 file3 ...
+t1:
+1
+2
+3
+
+t2:
+a
+b
+c 
+
+1.合并t1,t2中的两列
+paste t1 t2
+
+2.将t1文件中的列变行,并以空格分隔
+paste -s -d " " t1 <===> awk '{printf "%s ",$0}' t1
+
+3.行变列
+paste -s -d " " t1 | tr ' ' '\n'    
+者用 vi 打开文件 :%s/ /^M/g (^M 是用Ctrl + v ,Ctrl + m打出来的)
+
+-----tar命令
+将tar.gz提取到新目录里：
+tar zxvf package.tar.gz -C new_dir
+
+小技巧：
+一次创建多个目录 
+mkdir -p /home/user/{test,test1,test2}
+
+创建空文件或清空一个现有文件：
+> test.txt
+
+****(未实验过的！！)
+1. 得到某个时间的timestamp：
+$ date -d20130203 +%s
+$ 1359820800
+2. 从timestamp得到时间：
+$ date -d@1359820800
+$ Sun Feb 3 00:00:00 CST 2013
+3.date +"%Y-%m-%d %H:%M:%S" ##2014-05-29 14:23:40
+
+~ $ history | awk ‘{CMD[$2]++;count++;} END { for (a in CMD )print CMD[a] ” ” C
+MD[a]/count*100 “% ” a }’ | grep -v “./” | column -c3 -s ” ” -t | sort -nr | nl
+| head -n10
+
+
+---------->grep(egrep\zgrep) 命令
+在文件中查找指定字符
+grep string filename  <==> < filename grep string 
+
+egrep 的 i参数可以忽略大小写
+
+递归grep所有目录：
+grep -r "some_text" /path/to/dir
+
+获取hn_sm11.txt.modify文件中第50-55行的内容：
+< hn_sm11.txt.modify sed -n '50,55p'
+**正则表达式
+grep  '18512325[012]\{1\}[0-9]\{2\}'
+
+time sh -c 'find . -type f -print | xargs grep -l 18506811050'
+
+zgrep 在不解压.Z文件的情况下搜索文件内容
+------------find 命令
+*1、按名字查找 
+*2、按目录查找
+*3、按权限查找
+*4、按类型查找
+*5、按属主查找
+*6、按时间查找
+*7、按文件新旧
+*8、按文件大小
+*9、执行命令
+
+
+**命令格式：
+
+find [-path] -options [-print|-exec|-ok] 
+
+path：要查找的目录路径。 
+       ~ 表示$HOME目录
+       . 表示当前目录
+       / 表示根目录 
+
+print：表示将结果输出到标准输出
+
+exec：对匹配的文件执行该参数所给出的shell命令。 
+      形式为command {} \;,注意{}与\;之间有空格
+
+ok：与exec作用相同,
+      区别在于,在执行命令之前,都会给出提示,让用户确认是否执行
+
+options常用的有下选项： 
+      -name：按照名字查找 
+      -perm：安装权限查找 
+      -prune：不再当前指定的目录下查找 
+      -user：文件属主来查找 
+      -group：文件所属组来查找 
+      -nogroup：查找无有效所属组的文件 
+      -nouser：查找无有效属主的文件 
+      -type：按照文件类型查找 
+
+例如：
+*1、按名字查找 
+$find . -name boss.conf #在当前目录下,查找文件名文boss.conf的文件
+
+$find . -name '[A-Z]*.txt' -print #在当前目录中,查找以大写字母开头的txt文件
+
+$find /etc -name 'host*' -print #在/etc目录下,查找以host开头的文件
+
+$find ~ -name '*' -print #在home目录中查找所有文件
+
+$find . -name "out*" -prune -o - name "*.txt" -print # 在当前目录及子目录中,查找不是out开头的txt文件
+
+
+*2、按目录查找
+$find . -path "./aa" -prune -o -name "*.txt" -print #在当前目录除aa之外的子目录内搜索 txt文件
+
+$find . \( -path "./aa" -o -path "./bb" \) -prune -o -name "*.txt" -print #  在当前目录及除aa和bb之外	的子目录中查找txt文件
+
+$find . ! -name "." -type d -prune -o -type f -name "*.txt" -print #在当前目录,不在子目录中,查找txt	文件
+
+*3、按权限查找
+
+$find . -perm 755 -print #在当前目录下,查找属主具有读写执行,其他具有读执行权限的文件
+
+*4、按类型查找
+
+$find . -type l -print #在当前目录下,查找符号链接文件 (文件 f，目录 d)
+ 
+*5、按属主及属组
+　　
+$find / -user www -type f -print #查找属主是www的文件 　
+
+$find / -nouser -type f -print #查找属主被删除的文件　
+ 
+$find / -group mysql -type f -print #查找属组mysql的文件
+ 
+$find / -nogroup -type f -print #查找用户组被删掉的文件
+
+*6、按时间查找
+$find . -mtime -2 -type f -print #在当前目录下,查找两天内被更改过的文件
+
+$find . -mtime +2 -type f -print #在当前目录下,查找2天前被更改过的文件
+ 
+$find . -atime -1 -type f -print #查找一天内被访问的文件　
+ 
+$find . -atime +1 -type f -print #查找一天前被访问的文件　
+
+$find . -ctime -1 -type f -print #  查找一天内状态被改变的文件
+
+$find . -ctime +1 -type f -print #查找一天前状态被改变的文件　
+
+$find . -cmin +10 -type f -print #查找10分钟以前状态被改变的文件
+
+*7、按文件新旧
+
+$find . -newer "aa.txt" -type f -print #查找比aa.txt新的文件
+
+$find . ! -newer "aa.txt" -type f -print #查找比aa.txt旧的文件 
+
+$find . -newer 'aa.txt' ! -newer 'bb.txt' -type f -print #查找比aa.txt新,比bb.txt旧的文件 
+
+*8、按大小查找
+
+$find / -size +1M -type f -print #查找超过1M的文件
+
+$find . -size 6c -print #查找等于6字节的文件
+
+$find . -size -32k -print #查找小于32k的文件
+
+*9、执行命令
+
+$find . -name 'del.txt' -ok rm {} \; #查找del.txt并删除,删除前提示确认
+
+$find . -name 'aa.txt' -exec cp {} {}.bak \;#查找aa.txt 并备份为aa.txt.bak
+
+find . |wc -l #统计当前目录及子目录中的文件数
+
+find . -type f -exec egrep -l " +$" {} \; #找出文件名结尾有空格的文件：
+
+find . -type f -exec egrep -l $'\t' {} \; #找出文件名有tab缩进符的文件
+
+------>yes命令
+yes命令用于重复输出字符串
+yes命令不指定参数时，不断的输出y；指定字符串参数时，就不断的输出该字符串。要终止输出，必须杀掉该进程，比如按Ctrl+C
+yes |rm -i *.txt   或者 yes n|rm -i *.txt
+生成大的文本文件
+#!/bin/sh
+yes hello >hello.txt &
+PID=$!
+sleep 1
+kill $PID
+
+$ ls -l hello.txt
+
+---------->ftp命令
+ftp> open 10.249.27.36 #连接的远程主机  10.249.27.36
+ftp> cd /billing2/wang/gucb #进入远程主机目录
+ftp> bin #使用二进制文件传输方式(推荐使用这种方式下载文件 )
+ftp> lcd C:\User\Bing\Desktop #将本地工作目录切换至(ftp下载文件的话会将远程主机上的文件下载此目录)
+ftp> mget remote-files #传输多个远程文件,如 mget *.zip 将目录下的所有文件下载到本地目录
+ftp> mput local-file：将多个文件传输至远程主机
+
+ftp> ![cmd[args] #执行本机的shell（dos）命令，exit回到ftp环境
+ftp> bye #退出ftp会话过程。
+ftp>passive #进入被动传输方式
+ftp>prompt #设置多个文件传输时的交互提示
+
+更多命令：http://www.edu.cn/20010830/210045.shtml
+
+ftp传输文件脚本
+            #!/bin/ksh
+			ftp   -nv   <<!
+			open  134.32.22.23
+			user  billing 23yl%BIL
+			passive 
+			Passive mode on  
+			lcd /billing6/lius/cdr     
+			cd /bssdata/wangzf/exp4g/bill/cdr
+			bin
+			prompt off
+			mget *.zip
+			close
+			bye
+
+----------->nmon
+nmon 工具可以为 AIX 和 Linux 性能专家提供监视和分析性能数据的功能
+nmon -f -t -r -s5 -c100
+
+
+---------->source (.)
+source命令即点(.)命令。
+在 bash下输入man source，找到source命令解释处，可以看到解释"Read and execute commands from filename in
+the current shell environment and ..."。从中可以知道，source命令是在当前进程中执行参数文件中的各个命令，
+而不是另起子进程(或sub-shell)。
+source命令用法：
+source FileName
+作用:在当前bash环境下读取并执行FileName中的命令。
+注：该命令通常用命令“.”来替代。
+如：source .bash_rc 与 . .bash_rc 是等效的。
+
+
+------------------>date 命令
+date "+%Y%m%d %H:%M:%S" ##20140323 14:16:10
+date "+%Y.%m.%d %H:%M:%S"  ##2014.03.23 14:18:27
+
+------------------>read 命令
+如果不指定变量，那么read命令会将接收到的数据放置在环境变量REPLY中
+echo -n "Enter your name:"   #参数-n的作用是不换行，echo默认是换行
+
+read  name  #从键盘输
+echo "${name}"
+
+read命令提供了-p参数，允许在read命令行中直接指定一个提示。
+所以上面的脚本可以简写成下面的脚本:
+read -p "Enter your name:" name #从键盘输 (Linux系统下可用，Unix下不可用)
+echo "${name}"
+
+-s选项能够使read命令中输入的数据不显示在监视器上（实际上，数据是显示的，只是read命令将文本颜色设置成与背景相同的颜色）。
+#!/bin/bash
+read  -s  -p "Enter your password:" pass
+echo "your password is $pass"
+exit 0 
+
+[bazar2014@linuxlearn:~]$ read -s -n1
+[bazar2014@linuxlearn:~]$ echo $REPLY
+a
+
+#!/bin/sh (Unix下)
+echo -n "Enter your password:";
+read -s pass
+echo "${pass}"
+
+还可以使用read命令读取Linux系统上的文件。
+每次调用read命令都会读取文件中的"一行"文本。当文件没有可读的行时，read命令将以非零状态退出。
+读取文件的关键是如何将文本中的数据传送给read命令。
+
+
+------------------>zcat 命令
+zcat aa.zip
+zcat 0110110GJDX00110106002014022417050050DU.0.a.Z
+
+------------------>sleep 命令
+date;sleep 5;date ##单位为 秒
+
+------------------>eval 命令
+eval 相当于一个参数替换器，它会把所有 $开头的变量 进行求值替换，然后把替换后的结果当作一条命令来执行.
+[u@H /ngbss/billing8/gucb]$no=$(whoami|cut -c8)           
+[u@H /ngbss/billing8/gucb]$bo=$(echo "\$BOSS_DATA${no}")
+[u@H /ngbss/billing8/gucb]$echo $bo
+$BOSS_DATA8
+[u@H /ngbss/billing8/gucb]$eval echo $bo
+/billdata1/data8
+
+------------------>set (unset) 命令
+set :显示本地变量
+unset :清除本地变量 # 如unset array 常用来清除脚本中某个变量的值
+
+----------------->basename 命令
+basename 是去除目录后剩下的名字 (从文件的相对路径中提取文件名)
+example：shell>temp=/home/temp/1.test
+         shell>base=`basename $temp`
+         shell>echo $base 
+结果为：1.test
+
+---------------->dirname
+dirname 是取目录 （从文件的相对目录中提取目录）
+example：shell>temp=/home/temp/1.test
+         shell>dir=`dirname $temp`
+         shell>echo $dir
+结果为：/home/temp
+
+
+另一种实现的方法：
+${var##*/} 就是把变量var最后一个/以及左边的内容去掉
+${var%/*} 就是把变量var最后一个/以及右边的内容去掉
+例如：
+[u@H /ngbss/billing3]$echo $var
+/ngbss/billing3/autoacct/shelldir]/test.sh
+[u@H /ngbss/billing3]$echo ${var##*/}
+test.sh
+[u@H /ngbss/billing3]$echo ${var%/*}
+/ngbss/billing3/autoacct/shelldir]
+
+----------------->ssh 命令
+ssh billing8@10.161.2.98
+
+----------------->cal 命令
+cal 2 2014|xargs echo|awk '{print $NF}' ##获取2014年2月的最后一天
+
+----------------->shift
+位置参数可以用shift命令左移。比如shift 3表示原来的$4现在变成$1，原来的$5现在变成$2等等，原来的$1、$2、$3丢弃，$0不移动。
+不带参数的shift命令相当于shift 1。
+非常有用的 Unix 命令:shift。我们知道，对于位置变量或命令行参数，其个数必须是确定的，或者当 Shell 程序不知道其个数时，
+可以把所有参数一起赋值给变量$*。若用户要求 Shell 在不知道位置变量个数的情况下，还能逐个的把参数一一处理，
+也就是在 $1 后为 $2,在 $2 后面为 $3 等。在 shift 命令执行前变量 $1 的值在 shift 命令执行后就不可用了
+
+
+------------------>自动登录脚本
+spawn su - billing2
+expect "Password:"
+send "billing\r"
+interact
+##（from zhouq）
+
+	set timeout 30  #设置超时时间 ，单位： 秒
+　　spawn ssh -l username 192.168.1.1 
+　　expect "password:" 
+　　send "ispass\r" 
+　　interact 
+
+#! /bin/expect 
+spawn ssh billing1@10.161.2.91
+expect "billing1@10.161.2.91's password: "
+send "U1n@i3v\$e5r\r"
+interact
+
+
+#!/bin/expect
+spawn su - billing8
+expect {
+        "yes/no" {send "yes\r";exp_continue}
+        ":" {send "U1n@i3v\$e5r\r"}
+}
+interact
+
+
+----------------------oracle SQL
+sqlplus登录数据库：
+$sqlplus UCR_ACT1/bjc_acctUCR_ACT1gef@BJH_ACT
+插入数据:
+@test1.sql
+
+ 查找重复的记录
+ select *
+   from tg_cdr09_sp
+  where (msisdn, other_party, start_time) in
+        (select msisdn, other_party, start_time
+           from tg_cdr09_sp
+          group by msisdn, other_party, start_time
+         having count(*) > 1);
+
+SELECT A.BEGIN_MSISDN, A.END_MSISDN, A.PROV_CODE, COUNT(1)
+  FROM TD_MSISDN A
+ GROUP BY A.BEGIN_MSISDN, A.END_MSISDN, A.PROV_CODE
+ HAVING COUNT(1) >1;
+
+select * from tmp_number a 
+where exists (select 1 from where a.number = b.number and a.rowid > b.rowid) 
+
+
+删除重复记录：
+delete from tg_cdr09_sp
+where (msisdn,other_party,start_time) in (select msisdn,other_party,start_time
+from tg_cdr09_sp
+group by msisdn,other_party,start_time
+having count(*) > 1)
+and rowid not in (select min(rowid)
+from tg_cdr09_sp
+group by msisdn,other_party,start_time
+having count(*) > 1);  
+
+delete from tmp_number a 
+where exists (select 1 from where a.number = b.number and a.rowid > b.rowid) 
+
+
+
+将excel表格中的数据插入数据库中：
+select t.*,t.rowid from tmp_number; ##一定不能用for update
+增量插入：
+select t.*,t.rowid from tmp_number t where 1=2;
+
+oracle insert语句 中含有&字符时的插入方法：
+如：insert into MFANA.CLIENT (ID_,NAME_EN_)values (3269, 'J&WALONG');
+&在oracle中为特殊字符，必须进行转义
+'J&WALONG'  写成'J'||'&'||'WALONG'  或者 'J'||chr(38)||'WALONG'  就可以了
+
+***sql正则表达式
+select * from ucr_jl01.tg_cdr05@tobildb8 where regexp_like(other_party,'^[0-9]{0,4}1001[0-9]{1}$') ;
+
+表空间不足
+		1)查看表空间
+
+	SELECT UPPER(F.TABLESPACE_NAME) "表空间名", 
+	D.TOT_GROOTTE_MB "表空间大小(M)", 
+	D.TOT_GROOTTE_MB - F.TOTAL_BYTES "已使用空间(M)", 
+	TO_CHAR(ROUND((D.TOT_GROOTTE_MB - F.TOTAL_BYTES) / D.TOT_GROOTTE_MB * 100, 
+	2), 
+	'990.99') "使用比", 
+	F.TOTAL_BYTES "空闲空间(M)", 
+	F.MAX_BYTES "最大块(M)" 
+	FROM (SELECT TABLESPACE_NAME, 
+	ROUND(SUM(BYTES) / (1024 * 1024), 2) TOTAL_BYTES, 
+	ROUND(MAX(BYTES) / (1024 * 1024), 2) MAX_BYTES 
+	FROM SYS.DBA_FREE_SPACE 
+	GROUP BY TABLESPACE_NAME) F, 
+	(SELECT DD.TABLESPACE_NAME, 
+	ROUND(SUM(DD.BYTES) / (1024 * 1024), 2) TOT_GROOTTE_MB 
+	FROM SYS.DBA_DATA_FILES DD 
+	GROUP BY DD.TABLESPACE_NAME) D 
+	WHERE D.TABLESPACE_NAME = F.TABLESPACE_NAME 
+	ORDER BY 4 DESC
+
+查看一个表占的空间大小;
+SELECT SUM(A.BYTES)/1024/1024/1024 FROM sys.Dba_Segments a WHERE a.owner = 'UCR_SD01' AND A.segment_name = 'TG_CDR01';
+
+
+查看锁表语句
+SELECT SESS.SID,
+       SESS.SERIAL#,
+       LO.ORACLE_USERNAME,
+       LO.OS_USER_NAME,
+       AO.OBJECT_NAME,
+       LO.LOCKED_MODE
+  FROM V$LOCKED_OBJECT LO, DBA_OBJECTS AO, V$SESSION SESS
+ WHERE AO.OBJECT_ID = LO.OBJECT_ID
+   AND LO.SESSION_ID = SESS.SID;
+
+alter system kill session '295,35817';
+295 与35817是select出来的前两个字段
+	
+select distinct ceil(to_number(substr(t.id,-4,4))/1000+0.0001)  from tf_f_user_top40 t;
+create table tmp_user01 as select * from tf_f_user_top40 t where ceil(to_number(substr(t.id,-4,4))/1000+0.0001) = 1 ;
+
+找回误删的数据
+select * from ucr_err_shx01.TG_CDR_PP_ERR_SM as of timestamp(to_timestamp('20140417194700', 'yyyymmddhh24miss')) where 1=1;
+
+CREATE TABLE find_data AS
+select * from ucr_err_shx01.TG_CDR_PP_ERR_SM as of timestamp(to_timestamp('20140417194700', 'yyyymmddhh24miss')) where 1=1;
+
+建dblink语句
+create database link to_dgbil8
+　　connect to uqry identified by xPgg4nTq
+　　using ' (DESCRIPTION =
+    (ADDRESS = (PROTOCOL = TCP)(HOST = 10.161.2.152)(PORT = 1621))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = dgbil8)
+    )
+  )';
+
+
+在linux操作系统下，如何启动服务与监听命令？首先必须以oracle用户登陆：
+
+1、启动数据库：
+以下为引用的内容：
+
+[u@H /billing2/etc]$su - root #首先切换到root用户
+root's Password:                      #abcd-1234
+[u@h]:/>$su - oracle
+which db you want?
+export ORACLE_SID=bjh_bill
+export ORACLE_SID=bjhsta
+export ORACLE_SID=yzbilling
+export ORACLE_SID=jsbill
+[u@h]:/oracle>$export ORACLE_SID=yzbilling
+oracle@suse92:~> sqlplus /nolog
+
+SQL*Plus: Release 9.2.0.4.0 - Production on Fri Jan 20 02:29:37 2006
+
+Copyright (c) 1982, 2002, Oracle Corporation. All rights reserved.
+
+SQL> connect /as sysdba
+Connected to an idle instance.
+SQL> startup
+ORACLE instance started.
+
+Total System Global Area 135352820 bytes
+Fixed Size 455156 bytes
+Variable Size 109051904 bytes
+Database Buffers 25165824 bytes
+Redo Buffers 679936 bytes
+Database mounted. 
+
+2、关闭数据库：
+以下为引用的内容：
+oracle@suse92:~> sqlplus /nolog
+
+SQL*Plus: Release 9.2.0.4.0 - Production on Fri Jan 20 02:29:37 2006
+
+Copyright (c) 1982, 2002, Oracle Corporation. All rights reserved.
+
+SQL> connect /as sysdba
+Connected to an idle instance.
+SQL> shutdwon abort; 
+
+3、启动监听器
+以下为引用的内容：
+oracle@suse92:~> lsnrctl start
+
+　　4、停止监听器
+以下为引用的内容：
+oracle@suse92:~> lsnrctl stop
+
+　　5、查看监听器状态
+以下为引用的内容：
+oracle@suse92:~> lsnrctl
+LSNRCTL> status
+LSNRCTL> exit 
+
+sqlplus后台执行
+nohup sqlplus ucr_sd01/ucr_sd01@yzbillin @gs1.sql >gs1.log &
+
+oracle新建用户（用system用户）
+create user ucr_sd02 identified by ucr_sd02;
+grant connect to ucr_sd02; 
+grant resource to ucr_sd02;
+grant IMP_FULL_DATABASE to ucr_sd02;
+grant EXP_FULL_DATABASE to ucr_sd02;
+或者
+grant imp_full_database to ucr_sd02；
+
+
+oracle 表重命名
+alter table  ucr_sd01.tg_cdr12  rename to ucr_sd01.tg_cdr12_bak0124;
+或者：rename pdba to dba; 
+
+
+
+#表cdr3g_gs_user1w的user_id建了索引（表的数据量约是800万） 
+select count(*) from cdr3g_gs_user1w; #这个的查询时间是35s
+select count(t.user_id) from cdr3g_gs_user1w t; #查询时间为2s
+
+create index tmp_user_id_gsa on cdr3g_gs_user1w(user_id);
+create index tmp_roam_type_gsa on cdr3g_gs_user1w(roam_type);
+
+oracle表添加删除列(字段)
+alter table GUCB_5W_2 drop column num; #删除列
+alter table your_table add (column1 col_type1,clumn2 col_type2...);  #添加字段
+
+alter table TMP_TG_CDR_SP add FEE NUMBER(10); --优惠前费用
+alter table TMP_TG_CDR_SP add DISCOUNT_FEE NUMBER(10); --优惠后费用
+
+oracle 更改字段类型（长度）
+alter table TMP_TG_CDR_SP modify(SP_SRVID VARCHAR2(20));
+alter table TMP_TG_CDR_SP modify( A_PRODUCT_ID varchar2(40));
+alter table TMP_TG_CDR_SP modify(END_TIME CHAR(14));
+
+sqlplus 查看表结构
+desc tablename;
+sqlplus 查看存储过程
+select text from all_source where name = 'P_ASP_INTODETAILBILL';
+
+oracle函数：
+1.INSTR(C1,C2,I,J)
+在一个字符串中搜索指定的字符,返回发现指定的字符的位置;
+C1    被搜索的字符串
+C2    希望搜索的字符串
+I     搜索的开始位置,默认为1
+J     出现的位置,默认为1
+SQL> select instr('oracle traning','ra',1,2) instring from dual; # 9 
+
+
+--------------------------->altibase
+
+altibase 建表
+ create table gucb_user00 (
+userid CHAR(16) fixed)
+tablespace SYS_TBS_MEMORY;
+
+在shell脚本中使用isql
+#!/usr/bin/sh
+isql  -s 10.249.27.36   -u billing -p billing << EOF
+select * from gucb_user00;
+EOF
+
+***altibase查杀锁表语句
+
+--查询锁表语句
+select c.comm_name || ',' || c.client_pid as sid,a.tx_id, a.query 
+from v$lock_statement a, v$lock_wait b, v$session c  
+where a.tx_id = b.wait_for_trans_id and c.id = a.session_id;
+
+--切换管理员用户
+connect sys/manager;
+
+--杀锁表进程
+--其中3606为第一个查询语句查出的sid
+alter database mydb session close 3606; 
+
+
+---------------------------->MDB
+启动MDB服务
+console
+>start databse billing4;
+
+关闭MDB服务
+console
+>connect billing4;
+>stop database billing4;
+
+二、MDB的创建以及启动
+(非首次创建，进入$MDB_HOME目录下，删除ctl和data下的文件)
+1、MDB的创建
+　　启动console命令(console以编译完成)。
+	create database billing ;               --(billing为配置文件中配置的名字)
+2、MDB的启动
+	start database billing;
+3、创建表以及索引
+	A）启动RRC和mutex_manager进程。
+	B）到./src/mdb_createTool/tool目录下，分别通过
+　　createtool   table.cfg
+　　createtool index.cfg ##一定要记得建索引，要不MDB中插不进数据
+　　来创建表和索引。
+　 （前提，table.cfg以及index.cfg必须事先配置好）
+
+
+-------------> imp/exp 命令
+导入dmp文件
+imp ucr_sd/ucr_sd@yzbillin file=td_b_item_ods_20140109.dmp fromuser=query_ceshi touser=ucr_sd ignore=true;
+或加入输出日志：
+imp ucr_sd/ucr_sd@yzbillin file=td_b_item_ods_20140109.dmp log=mylog fromuser=query_ceshi touser=ucr_sd ignore=true
+导出dmp文件
+exp query_ceshi@act1db1_tux file=td_b_item_ods_20140109.dmp tables = td_b_item_ods
+
+批量导出：（list2为要导出的文件列表）
+cat list2|xargs -i sh -c "exp ucr_param/ucr_param@yzbillin file=./tmp/{}.dmp tables={}"
+
+批量导入：
+cat list2|xargs -i sh -c "imp ucr_sd/ucr_sd@yzbillin file=./tmp/{}.dmp fromuser=ucr_param touser=ucr_sd tables={} ignore=true"
+
+exp 导出数据库中的某个用户:
+exp UCR_AUTOACCT/UCR_AUTOACCT@ACT1  owner=UCR_AUTOACCT  rows=y  indexes=n  compress=n  buffer=65536 feedback=100000
+file=UCR_AUTOACCT.dmp log=exp.log
+
+
+------------------perl
+替换
+perl -p -i -e 's/a/bbbb/g' t2 #将t2文件中的a替换为bbbb并写回原文件
+参数-e表示整个程序接在命令的后面,参数-p表示对目标文件的每一行进行查找和替换,
+-i表示将替换的结果写回到文件。
+如果不加-i参数的话效果是跟用sed一样的,只在输出结果中改变替换的内容,而原文件不做替换
+即：perl -p -e 's/a/bbbb/g' t2 <===> sed 's/a/bbbb/g' t2
+
+操作符：chomp 移除字符串末尾的换行符 #如 chomp($text)
+chomp($text=<STDIN>) ##读入字符串，略过最后的换行符（\n）
+
+#!/usr/bin/perl
+##perl的for循环
+$sum=0;
+for($i=1;$i<=10;$i++){
+$sum+=$i;
+}
+print "$sum\n";
+
+@array=(3,6,9); ##perl数组
+$number=@array; ##把数组的元素个数赋值给变量number
+$sum1=0;
+for($i=0;$i<$number;$i++){
+$sum1+=$array[$i]; ##把数组的元素值相加
+}
+print "$sum1\n";
+
+
+for $var(@array)
+{
+  print "$var\n" ##遍历数组
+}
+
+$sum2=0;
+for (@array){
+  $sum2+=$_; ##perl的特殊用法
+}
+print "$sum2\n";
+
+
+#!/usr/bin/perl
+##perl的while循环
+$a=1;
+while ($a<=3)
+{
+print "$a\n";
+$a++
+} 
+
+$b=1;
+while ($b<=3)
+{
+  if ($b==2){
+    next;
+  }
+print "$b\n";
+}
+continue{
+  $b++;
+}
+
+##Perl函数
+1)split函数，split函数-把字符串进行分割并把分割后的结果放入数组中。这个Perl split函数使用正则表达式（RE），
+如果未特定则工作在$_变量上
+$info="Caine:Michael:Actor:14,LeafyDrive";  
+@personal=split(/:/,$info);  
+其结果是：@personal=("Caine","Michael","Actor","14,LeafyDrive");
+
+如果各个域被任何数量的冒号分隔，可以用RE代码进行分割：
+$_="Capes:Geoff::Shotputter:::BigAvenue";  
+@personal=split(/:+/);  
+其结果是：@personal=("Capes","Geoff","Shotputter","BigAvenue");
+
+
+---------------sort
+sort将文件的每一行作为一个单位,相互比较,比较原则是从首字符向后,依次按ASCII码值进行比较,最后将他们按升序输出
+参数：
+-u  它的作用很简单,就是在输出行中去除重复行
+-r  sort默认的排序方式是升序,如果想改成降序,就加个-r参数选项
+-o  由于sort默认是把结果输出到标准输出,所以需要用重定向才能将结果写入文件,形如sort filename > newfile
+	如果你想把排序结果输出到原文件中,就需要使用-o选项了。 如：sort -r number.txt -o number.txt
+-t  -t选项用来设定间隔符(跟cut和paste的-d选项差不多) 
+-k  指定了间隔符之后,就可以用-k来指定列数了
+-n  使用-n选项,来告诉sort,"要以数值来排序"！
+
+
+查看文件指定列的内容,并除去重复行
+①cut -f58 -d, < test3 >temp1
+②sort -u < temp1
+
+sort -n -k 32 -u -t, t1
+
+cat a b | sort | uniq > c   # c 是a和b的合集
+
+cat a b | sort | uniq -d > c   # c 是a和b的交集
+
+cat a b b | sort | uniq -u > c   # c 是a和b的不同
+
+
+-------------------压缩和解压缩命令
+范例： 
+
+.tar 
+解包：tar -xvf FileName.tar 
+打包：tar -cvf FileName.tar DirName 
+（注：tar是打包,不是压缩！） 
+--------------------------------------------- 
+.gz 
+解压1：gunzip FileName.gz 
+解压2：gzip -d FileName.gz 
+压缩：gzip FileName 
+.tar.gz 
+解压：tar zxvf FileName.tar.gz 
+压缩：tar zcvf FileName.tar.gz DirName 
+--------------------------------------------- 
+.bz2 
+解压1：bzip2 -d FileName.bz2 
+解压2：bunzip2 FileName.bz2 
+压缩： bzip2 -z FileName 
+.tar.bz2 
+解压：tar jxvf FileName.tar.bz2 
+压缩：tar jcvf FileName.tar.bz2 DirName 
+--------------------------------------------- 
+.bz 
+解压1：bzip2 -d FileName.bz 
+解压2：bunzip2 FileName.bz 
+压缩：未知 
+--------------------------------------------- 
+.tar.bz 
+解压：tar jxvf FileName.tar.bz 
+压缩：未知 
+--------------------------------------------- 
+.Z 
+解压：uncompress FileName.Z 
+压缩：compress FileName 
+.tar.Z 
+解压：tar Zxvf FileName.tar.Z 
+压缩：tar Zcvf FileName.tar.Z DirName 
+--------------------------------------------- 
+.tgz 
+解压：tar zxvf FileName.tgz 
+压缩：未知 
+.tar.tgz 
+解压：tar zxvf FileName.tar.tgz 
+压缩：tar zcvf FileName.tar.tgz FileName 
+--------------------------------------------- 
+.zip 
+解压：unzip FileName.zip 
+压缩：zip FileName.zip DirName 
+--------------------------------------------- 
+.rar 
+解压：rar a FileName.rar 
+压缩：rar e FileName.rar 
+
+
+-------------->查看磁盘空间df
+df -g #可以在显示时以G为单位显示文件系统的大小
+
+Filesystem    GB blocks      Free %Used    Iused %Iused Mounted on
+/dev/vx/dsk/bilappvg8/bildata8   1729.00    701.97   60% 64681433    74% /bildata8
+...
+
+  文件系统的剩余空间显示在free列中,%Used表示文件系统的当前利用率,如果接近100%系统管理员应该考虑是否增大其的空间
+  或删除某些不需要的文件.Iuse表示文件系统索引节点的使用数量,%Iused表示索引节点的使用率,如果该值到达100%表示该文件
+  系统没有剩余的索引节点,这时系统不能在该文件系统中再创建任何文件了
+
+df -m #可以在显示时以M为单位显示文件系统的大小.
+
+df -I #命令显示文件系统已使用空间大小
+
+------------->du 查看目录大小
+参数:
+-m 以兆为单位显示各级目录的大小
+-s 只显示第一级目录的大小
+--max-depth=n 显示目录的深度 n为数字 du -s 和du --max-depth=0 效果是一样的
+
+-----------------------------------------------> shell 编程
+shell数组
+**数组的定义
+bash中数组定义采用形式: arr =(element1 element2 element3...... )
+ksh中数组定义采用形式: set -A arr element1 element2 element3 ...... 
+**数组的访问
+数组的访问主要包括: 获取数组中元素的个数, 获取特定索引数组元素, 遍历数组元素。在bash和ksh中这些操作基本是相同的。
+echo ${#arr[@]} #获取数组中元素的个数
+echo ${arr[0]}  # 获取特定索引数组元素
+[u@H /billing/prosrc/stand_cdr/special_cdr]$for i in ${arr[*]} #遍历数组元素
+billing@npar3 > do 
+billing@npar3 > echo $i
+billing@npar3 > done
+
+[u@H /ngbss/billing7]$set -A arr 2 3 4 5 6
+[u@H /ngbss/billing7]$echo ${arr[0]}
+2
+[u@H /ngbss/billing7]$echo ${arr[4]}
+6
+[u@H /ngbss/billing7]$k=2  
+[u@H /ngbss/billing7]$echo $k
+2
+[u@H /ngbss/billing7]$echo ${arr[k]}
+4
+[u@H /ngbss/billing7]$echo ${arr[k-1]}
+3
+
+例：将当前目录下文件名存入数组files中
+**bash
+files=($(ls))
+**ksh
+set -A files $(ls) 
+遍历数组元素：
+for i in ${files[*]};  
+> do  
+>     echo "access file: $i"  
+>     ls -lh $i  
+> done 
+
+for i in 4 5 6 7 8
+do
+unzip etc${i}_bak0319.zip ;mv etc etc${i}
+done
+
+查找过去24小时（-mtime -2则表示过去48小时）内修改过的文件,并将所有查找到的文件打一个包
+zip newer.zip `find . -mtime -1 -type f -print`
+#注意，包含find命令的是`(在Esc键上)，而不是'
+
+3) 流程控制
+"if" 表达式 如果条件为真则执行then后面的部分： 
+if ....; then
+　 ....
+elif ....; then
+　 ....
+else
+　 ....
+fi
+大多数情况下，可以使用测试命令来对条件进行测试。比如可以比较字符串、判断文件是否存在及是否可读等等…
+通常用" [ ] "来表示条件测试。注意这里的空格很重要。要确保方括号的空格。 
+[ -f "somefile" ] ：判断是否是一个文件 # [ ! -f "filename" ] 文件不存在
+[ -x "/bin/ls" ] ：判断/bin/ls是否存在并有可执行权限
+[ -n "$var" ] ：判断$var变量是否有值
+[ "$a" = "$b" ] ：判断$a和$b是否相等 或者 [ "$a" -eq "$b" ]
+
+例1：
+#!/bin/sh
+if [ $1 -eq $2 ]; then
+   echo "the first number is equal to the next"
+elif [ $1 -gt $2 ]; then
+   echo "the first number is great than the next"
+elif [ $1 -lt $2 ]; then
+   echo "the first number is great than the next"
+else
+   echo "None of the condition met"
+fi
+
+例2：
+#!/bin/sh  
+DIR=$1  
+if [ "$DIR" = "" ]; then  
+   echo "Usage:`basename $0` directory to create" >&2  
+   exit 1  
+fi  
+ 
+if [ -d $DIR ]; then  
+   echo "Directory $DIR exists"  
+else  
+   echo "The Directory does exist"  
+   echo -n "Create it now?[y..n]:"  
+   read ANS  
+   if [ "$ANS" = "y" ] || [ "$ANS" = "Y" ]; then  
+      echo "creating now"  
+      mkdir $DIR > log.txt 2>&1  
+      if [ $? -ne 0 ]; then  
+         echo "Errors creating the directory $DIR" >&2  
+         exit 1  
+      fi  
+      echo "Creating successful"  
+   elif [ "$ANS" = "n" ] || [ "$ANS" = "N" ]; then  
+      echo "Giving up creating directory $DIR"  
+   else  
+      echo "Bad input"  
+   fi  
+fi
+
+**while loop:
+
+#!/bin/ksh  
+i=0  
+while [ $i -le 10 ]  
+do  
+  echo $i  
+  i=`expr $i + 1`  
+done
+
+---shell 判断目录是否存在
+if [ ! -d gucb_tmp ];then
+mkdir  gucb_tmp;
+fi
+
+shell脚本自定义函数
+
+add(){
+z=`expr $1 + $2`
+echo $z
+}
+
+add 1 2
+total=$(add 3 2)
+echo "${total}"
+
+-----------> expr 命令
+no=`expr ${prov_no} \* 8 + ${prov_no}` ##注意 * 需要转义 ，并且操作数和操作符间有空格
+
+---------->declare 命令
+declare或typeset内建命令(它们是完全相同的)可以用来限定变量的属性.这是在某些编程语言中使用的定义类型不严格的方式。
+命令declare是bash版本2之后才有的。命令typeset也可以在ksh脚本中运行
+**declare/typeset 选项
+-r 只读
+declare -r var1 #declare -r var1与readonly var1作用相同
+-i 整数
+declare -i number # 脚本余下的部分会把"number"当作整数看待.
+-a 数组
+declare -a indices  #变量indices会被当作数组.
+-f 函数
+declare -f  #在脚本中没有带任何参数的declare -f 会列出所有在此脚本前面已定义的函数出来。
+declare -f function_name ##而declare -f function_name则只会列出指定的函数
+
+
+***shell脚本特殊参数
+位置参数：
+$0, $1, $2,...
+位置参数,从命令行传递给脚本,或者是传递给函数.或者赋职给一个变量.
+$0 表示当前执行的进程名,shell脚本本身的名字 或函数名,或者在正则表达式(awk)中表示整行输出
+$1 第一个参数
+$2 第二个参数
+
+$# 命令行或者shell脚本参数的个数
+$* 所有的位置参数,被作为一个单词  #注意:"$*"必须被""引用.
+$@ 与$*同义,但是每个参数都是一个独立的""引用字串,这就意味着参数被完整地传递,并没有被解释和扩展.
+   这也意味着,参数列表中的每个参数都被当成一个独立的单词. #注意:"$@"必须被""引用.
+$! 在后台运行的最后的工作的PID(进程ID). 例如yes命令的示例
+$_ 保存之前执行的命令的最后一个参数
+$? 命令,函数或者脚本本身的退出状态,用于检查上一个命令,函数或者脚本执行是否正确。（在Linux中，
+   命令退出状态为0表示该命令正确执行，任何非0值表示命令出错。）
+$$ 脚本自身的进程ID.这个变量经常用来构造一个"unique"的临时文件名.
+
+---------------------------->shell 脚本中的特殊符号
+（详细 参见：http://www.360doc.com/content/13/0524/13/7044580_287734286.shtml）
+1. {}大括号
+
+2
+3. `command` 反引号：
+	`command` 与 $(command)的含义相同，都是返回当前执行命令的结果
+
+4. $(())语法：对括号内的表达式求值
+
+代码:
+    #!/bin/sh
+    x=0
+    while [ "$x" -ne 10 ];do
+    echo $x
+    x=$(($x+1))
+    done
+    exit 0
+
+
+分割文件(将文件按行数分割)：
+##只适用于当前目录下只有一个文件的情况,如果存在多个文件可以先和成一个文件(ls G*|xargs -n1 cat >> prefix)，再用该脚本分割
+file=$(ls); 
+split -l 5000 -a 4 $file tmp_;#split默认的最大分割文件数为676(26*26),-a参数可以自定义文件数（4表示四个字符长度）
+mkdir -p splitbak;
+mv $file splitbak;
+ #awk引用shell变量,%04d 表示在输出一个小于4位的数值时, 将在前面补0使其总宽度为4位
+ls tmp_*|awk '{printf("mv %s %s%04s\n", $0,f, NR)}' f="$file" > mv.sh 
+chmod 777 mv.sh
+./mv.sh
+rm mv.sh
+
+awk引用外部变量(生成前导0数字序列)
+echo "" | awk '{for(i=1;i<=1000;i++)printf "%04d\n",i}'
+echo "" | awk '{for(i=0;i<=9999;i++)printf ("%s%04d\n",v1,i)}' v1="$file" ##file=1300000
+
+echo "" | awk '{for(i=1;i<=96;i++)printf "%d\n",i}' ##(非0前导数字序列)
+
+去掉文件中的 ^M 符号
+tr -d '\015' < smsremind.cfg >smsremind.cfg1
+
+scp -r src billing@10.124.0.1:/ngbss/billing
+scp -r  billing1@10.161.2.91:/billing1/etc .; ##(推荐)
+
+-------->Unix 环境变量：
+	常见环境变量：
+PATH 决定shell将到哪些目录中寻找命令或程序
+HOME 当前用户主目录
+HISTSIZE 历史记录数
+LOGNAME 当前用户登录名
+HOSTNAME 主机名称
+SHELL 当前用户Shell类型
+LANGUAGE 语言相关环境变量
+MAIL 当前用户邮件存放目录
+PS1 基本提示符 root用户是#，普通用户是
+
+	环境变量类型
+按变量生存周期来划分，可分为永久变量和临时变量。
+永久变量：需要修改配置文件，变量永久生效
+临时变量：使用export命令声明，变量在关闭shell时失效
+
+	设置环境变量的3种方法
+1 在/etc/profile文件中添加变量，可对所有用户生效（永久的）
+ export CLASSPATH=./JAVA_HOME/lib 
+如果需要在修改文件后马上生效，则需要运行命令 
+source /etc/profile 
+2 在用户目录下的.bash_profile文件中增加变量（对本用户生效，对其他用户无效）
+马上生效命令： 
+export /home/用户目录/.bash_profile
+3 直接运行export命令
+使环境变量生效 . .profile
+
+
+------------> cc(xlc) 编译器
+多数UNIX平台都通过CC调用它们的C编译程序.除标准和CC以外,LINUX和FREEBSD还支持gcc
+
+基本的编译命令有以下几种:
+1.  -c   编译产生对象文件(*.obj)而不链接成可执行文件,当编译几个独立的模块,而待以后由链接程序把它们链接在一起时,
+    就可以使用这个选项,如:
+             $cc -c hello.c ===> hello.o
+             $cc hello.o
+
+2.  -o    允许用户指定输出文件名,如
+
+            $cc hello.c -o hello.o
+            or
+            $cc hello.c -o hello
+
+3.  -g    指明编译程序在编译的输出中应产生调试信息.这个调试信息使源代码和变量名引用在调试程序中
+		  或者当程序异常退出后在分析core文件时可被使用.
+
+4.   -D   允许从编译程序命令行定义宏符号
+        一共有两种情况:一种是用-DMACRO,相当于在程序中使用#define MACRO,另一种是用-DMACRO=A,
+		相当于程序中的#define MACRO A.如对下面这代码:
+          #ifdefine DEBUG
+                    printf("debug message\n");
+         #endif
+
+       编译时可加上-DDEBUG参数,执行程序则打印出编译信息
+
+5.   -I   可指定查找include文件的其他位置.例如,如果有些include文件位于比较特殊的地方,比如/usr/local/include,
+		  就可以增加此选项如下:
+        $cc -c -I/usr/local/include -I/opt/include hello.c 此时目录搜索会按给出的次序进行.
+
+6. -E   这个选项是相对标准的,它允许修改命令行以使编译程序把预先处理的C文件发到标准输出,而不实际编译代码.
+        在查看C预处理伪指令和C宏时,这是很有用的.可能的编译输出可重新定向到一个文件,然后用编辑程序来分析:
+
+      $cc -c -E hello.c >cpp.out      
+	  此命令使include文件和程序被预先处理并重定向到文件cpp.out.以后可以用编辑程序或者分页命令分析这个文件,
+	  并确定最终的C语言代码看起来如何.
+
+7. -o   优化选项,这个选项不是标准的
+
+        -O和 -O1指定1级优化
+        -O2 指定2级优化
+        -O3 指定3级优化
+        -O0指定不优化
+
+      $cc -c O3 -O0 hello.c  当出现多个优化时,以最后一个为准!!
+
+8. -Wall  以最高级别使用GNU编译程序,专门用于显示警告用!!
+      $gcc -Wall hello.c
+
+9.   -L指定连接库的搜索目录,-l(小写L)指定连接库的名字
+      $gcc main.o -L/usr/lib -lqt -o hello
+
+     上面的命令把目标文件main.o与库qt相连接,连接时会到/usr/lib查找这个库文件.也就是说-L与-l一般要成对出现.
+
+-----------> dbx 调试器
+dbx命令是在 Aix下调试的工具
+具体的详细命令如下：其中也可以使用首字母，例如  l  可以代替 line
+p 可以代替 print
+ 
+alias ：自定义命令格式的 如 alias r run
+assign: 给变量赋值  如 assign number=10
+cont : 从设置的断点中接着运行
+delete ,clear :去除断点或者跟踪 
+dump,print:打印程序过程变量或者表达式的值 print number or p number
+edit :修改原代码 
+file :更新源文件 file test.c
+func :更新过程或者函数
+list :可以显示当前源代码10行
+next,step :执行程序单步走
+quit :退出
+status :显示所有设置的断点
+stop :设置断点 stop at 2-->第二行设置断点;stop in procedure/function;
+
+stop variable;stop if condition
+trace :跟踪变量或者表达式 如 trace number ;trace procedure/function;
+whatis :显示变量的类型 whatis number -->显示int number;
+where :显示跟踪的函数或者变量
+which :显示变量的具体位置 which number -->显示test.main.number
+run :接着跑下一个程序  如run test
+unalias :取消自定义的命名 如 unalias r -->r指的是当初alias r run中的r
+补充:
+goto : 走到程序的多少行
+s ： 进入函数体里面执行
+
+
+------------> gcc 编译器
+linux下的cc默认是指向gcc的。
+
+------------> gdb 调试器
+一般来说，GDB主要帮忙你完成下面四个方面的功能：
+    1、启动你的程序，可以按照你的自定义的要求随心所欲的运行程序。
+    2、可让被调试的程序在你所指定的调置的断点处停住。（断点可以是条件表达式）
+    3、当程序被停住时，可以检查此时你的程序中所发生的事。
+    4、动态的改变你程序的执行环境。
+
+一个调试示例
+——————
+源程序：tst.c
+     1 #include <stdio.h>
+     2
+     3 int func(int n)
+     4 {
+     5         int sum=0,i;
+     6         for(i=0; i<n; i++)
+     7         {
+     8                 sum+=i;
+     9         }
+    10         return sum;
+    11 }
+    12
+    13
+    14 main()
+    15 {
+    16         int i;
+    17         long result = 0;
+    18         for(i=1; i<=100; i++)
+    19         {
+    20                 result += i;
+    21         }
+    22
+    23        printf("result[1-100] = %d /n", result );
+    24        printf("result[1-250] = %d /n", func(250) );
+    25 }
+
+编译生成执行文件：（Linux下）
+    hchen/test> cc -g tst.c -o tst
+使用GDB调试：
+hchen/test> gdb tst  <---------- 启动GDB
+GNU gdb 5.1.1
+Copyright 2002 Free Software Foundation, Inc.
+GDB is free software, covered by the GNU General Public License, and you are
+welcome to change it and/or distribute copies of it under certain conditions.
+Type "show copying" to see the conditions.
+There is absolutely no warranty for GDB.  Type "show warranty" for details.
+This GDB was configured as "i386-suse-linux"...
+(gdb) l     <-------------------- l命令相当于list，从第一行开始例出原码。 #list 1,10
+1        #include <stdio.h>
+2
+3        int func(int n)
+4        {
+5                int sum=0,i;
+6                for(i=0; i<n; i++)
+7                {
+8                        sum+=i;
+9                }
+10               return sum;
+(gdb)       <-------------------- 直接回车表示，重复上一次命令
+11       }
+12
+13
+14       main()
+15       {
+16               int i;
+17               long result = 0;
+18               for(i=1; i<=100; i++)
+19               {
+20                       result += i;    
+(gdb) break 16    <-------------------- 设置断点，在源程序第16行处。
+Breakpoint 1 at 0x8048496: file tst.c, line 16.
+(gdb) break func  <-------------------- 设置断点，在函数func()入口处。
+Breakpoint 2 at 0x8048456: file tst.c, line 5.
+(gdb) info break  <-------------------- 查看断点信息。
+Num Type           Disp Enb Address    What
+1   breakpoint     keep y   0x08048496 in main at tst.c:16
+2   breakpoint     keep y   0x08048456 in func at tst.c:5
+(gdb) r           <--------------------- 运行程序，run命令简写
+Starting program: /home/hchen/test/tst
+
+Breakpoint 1, main () at tst.c:17    <---------- 在断点处停住。
+17               long result = 0;
+(gdb) n          <--------------------- 单条语句执行，next命令简写。
+18               for(i=1; i<=100; i++)
+(gdb) n
+20                       result += i;
+(gdb) n
+18               for(i=1; i<=100; i++)
+(gdb) n
+20                       result += i;
+(gdb) c          <--------------------- 继续运行程序，continue命令简写。
+Continuing.
+result[1-100] = 5050       <----------程序输出。
+
+Breakpoint 2, func (n=250) at tst.c:5
+5                int sum=0,i;
+(gdb) n
+6                for(i=1; i<=n; i++)
+(gdb) p i        <--------------------- 打印变量i的值，print命令简写。
+$1 = 134513808
+(gdb) n
+8                        sum+=i;
+(gdb) n
+6                for(i=1; i<=n; i++)
+(gdb) p sum
+$2 = 1
+(gdb) n
+8                        sum+=i;
+(gdb) p i
+$3 = 2
+(gdb) n
+6                for(i=1; i<=n; i++)
+(gdb) p sum
+$4 = 3
+(gdb) bt        <--------------------- 查看函数堆栈。
+#0  func (n=250) at tst.c:5
+#1  0x080484e4 in main () at tst.c:24
+#2  0x400409ed in __libc_start_main () from /lib/libc.so.6
+(gdb) finish    <--------------------- 退出函数。
+Run till exit from #0  func (n=250) at tst.c:5
+0x080484e4 in main () at tst.c:24
+24              printf("result[1-250] = %d /n", func(250) );
+Value returned is $6 = 31375
+(gdb) c     <--------------------- 继续运行。
+Continuing.
+result[1-250] = 31375    <----------程序输出。
+
+Program exited with code 027. <--------程序退出，调试结束。
+(gdb) q     <--------------------- 退出gdb。
+
+
+------------------->makefile
+<<跟我一起学Makefile>> -- 陈皓
+源文件到.o文件(中间代码文件)或者Windows下的.obj文件 --> 编译(compile)
+把中间代码文件合成执行文件 --> 链接(link)
+make命令执行时,需要一个Makefile文件,以告诉make命令需要怎样的编译和链接程序
+
+
+
+----------------->git
+git config --global core.editor vim #设置默认的编辑器
+
+git clone [url]
+如:
+git clone git://github.com/Baz2013/MailClient.git
+或者 git clone git://github.com/Baz2013/MailClient.git Mail_client #将项目clone到一个新的目录(Mail_client)下
+git:// 表示使用git:协议 也可以使用http(s)://协议
+
+git status #查看本地文件所处的状态,On branch master 说明当前所在的分支是 master
+git add file_name[dir_name] #开始跟踪一个新文件或目录,如果是目录就递归跟踪目录下的所有文件
+如:git add test.sh 
+git add 命令是个多功能命令，根据目标文件的状态不同，此命令的效果也不同：可以用它开始跟踪新文件，
+或者把已跟踪的文件放到暂存区，还能用于合并时把有冲突的文件标记为已解决状态等
+
+git push https://github.com/Baz2013/MailClient.git #提交更新,根据提示输入用户名/密码
+
+git diff #查看文件修改了哪些地方,不加参数表示尚未暂存文件修改了哪些地方
+git diff --cached #查看已经暂存起来的文件和上次提交时的快照之间的差异 
+
+git commit #这种方式会启动文本编辑器以便输入本次提交的说明,退出编辑器时，Git 会丢掉注释行，将说明内容和本次更新提交到仓库
+-v 选项将修改差异的每一行都包含到注释中来
+-m 参数后跟提交说明的方式，在一行命令中提交更新
+如: git commit -m "Story 182: Fix benchmarks for speed"
+-a 选项，Git 就会自动把所有已经跟踪过的文件暂存起来一并提交，从而跳过 git add 步骤
+
+git log #查看历史更新
+
+##撤销操作,git的撤销操作是不可逆的!!
+
+git remote #查看当前配置中有哪些远程仓库
+-v #显示对应的克隆地址
+
+git fetch [remote-name] #抓取远程仓库数据到本地
+git pull #自动抓取数据下来，然后将远端分支自动合并到本地仓库中当前分支
