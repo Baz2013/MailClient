@@ -245,6 +245,8 @@ LANG=en_US.UTF-8
 
 只需要调用：awk内置变量 ENVIRON,就可以直接获得环境变量。它是一个字典数组。环境变量名 就是它的键值。
 
+0)列出10条最常用的命令
+history|awk '{a[$2]++}END{for (i in a) {print a[i]" "i}}'|sort -rn|head
 
 1)删除行首的空格和制表符
 awk '{ sub(/^[ \t]+/,""); print }' <t2 #删除t2文件中行首的空格或者制表符
@@ -1130,6 +1132,21 @@ grep  '18512325[012]\{1\}[0-9]\{2\}'
 time sh -c 'find . -type f -print | xargs grep -l 18506811050'
 
 zgrep 在不解压.Z文件的情况下搜索文件内容
+
+----------------------->curl命令
+  CURL支持HTTP,HTTPS,FTP在内的众多协议.它还支持post,cookie,认证,从指定偏移处下载部分文件,参照页,用户代理字符串,扩展头部,限速,文件大小限制,进度条等特性.
+  常用来将网页处理流程及数据检索自动化.
+  curl通常将下载文件输出到stdout,将进度信息输出到stderr.要想避免进度信息,可以使用--silent选项.
+**实战演练
+  curl命令可以使用执行下载,发送各种HTTP请求,指定HTTP头部等操作.
+  curl URL --silent ##过滤进度信息
+  curl URL --silent -O #选项-O用来将下载数据写入文件,而非写入标准输出.该文件名是从URL中解析出来的文件名.
+  例如:curl http://slynux.org/index.html --silent -O 这将创建文件index.html
+  curl URL --silent -o new_filename #选项-o用来将下载的数据写入指定名称的文件中.
+  如:curl www.baidu.com --silent -o baidu.txt 
+  curl www.baidu.com -o baidu.txt --progress ## 用--progress代替--silent,显示形如 "#"的进度条
+  
+
 ------------find 命令
 *1、按名字查找 
 *2、按目录查找
