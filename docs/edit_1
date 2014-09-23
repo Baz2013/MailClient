@@ -5,11 +5,17 @@ s  套接字文件	b  块设备文件
 c  字符设备文件	p  命名管道文件
 -  普通文件
 
+AIX 时间戳 
+90-180天显示月份和时间
+180天以外显示年份
+90天以内显示月份日期和时间
+
 /dev/null ：代表空设备文件
 >  ：代表重定向到哪里，例如：echo "123" > /home/123.txt
 1  ：表示stdout标准输出，系统默认值是1，所以">/dev/null"等同于"1>/dev/null"
 2  ：表示stderr标准错误
 &  ：表示等同于的意思，2>&1，表示2的输出重定向等同于1
+如：nohup sh test.sh >test.log 2>&1 &
 
 Unix/Linux下的常见问题及解决：
 同一路径下存在相同的文件名，但其中一个为空文件
@@ -19,12 +25,13 @@ ls -l *^M* 可以匹配出这些文件来
 rm *^M*  可以删除这些文件（注意^M是ctrl + v ctrl + m 打出来的）
 
 ----------------->awk
-awk '/search pattern1/{action1} /search pattern2{action2}/' file
+awk '/search pattern1/{action1} /search pattern2/{action2}' file
 ls -l>t1
 ll|awk '{if($7=="24")print$9}' 
 
 **查找
 ll|awk '/Dec [0-9]*/{print$0}' #列出12月份的文件 <===> ll|grep 'Dec [0-9]*'
+ll|awk '$1 ~ /^-.*/ && $6 ~ /(Jun|Feb)/ && $7 ~ /1[0-9]+/ '
 
 **替换(正则表达式查找替换)
 **内置变量
@@ -69,9 +76,28 @@ head -n 1 example | awk -F ',|\t|' '{print "NR="NR,"NF="NF,"\n$0:" $0}'
 
 awk 'BEGIN{}{}END{}'
 awk 'END{print NR}' example #打印example文件的行数
-**内置字符串函数
-awk内置字符串函数详解
+**内置变量：
+ARGC        命令行参数个数  
+ARGV        命令行参数排列  
+ENVIRON     支持队列中系统环境变量的使用  
+FILENAME    awk浏览的文件名  
+FNR     浏览文件的记录数  
+FS      设置输入域分隔符，等价于命令行-F选项  
+NF      浏览记录的域个数  
+NR      已读的记录数  
+OFS     输出域分隔符  
+ORS     输出记录分隔符  
+RS      控制记录分隔符  
 
+使用举例：
+获取字符串的字段数
+echo "2257/2255/202/1464/203"|awk -F"/" '{print NF}'  ## 输出 5
+取出文件名及后缀  
+echo "/usr/xxxx/ytcclb/cat_file.txt" | awk -F/ '{print $NF}'
+打印域个数，行号，记录，以及文件名  
+awk '{print NF,NR,$0} END {print FILENAME}' grade.txt  
+
+**内置字符串函数
 awk内置字符串函数
 
 gsub(r,s)	    在整个$0中用s替代r
@@ -155,7 +181,7 @@ Myarray[3]="789"
 使用sub发现并替换模式的第一次出现位置。字符串STR包含‘popedpopopill’,执行下
 列sub命令sub(/op/,"op",STR)。模式op第一次出现时,进行替换操作,返回结果如下：
 ‘pOPedpopepill’。
-假如grade.txt文件中,学生J.Troll的记录有两个值一样,“目前级别分”与“最高级别分”。只
+假如grade.txt文件中,学生J.Troll的记录有两个值一样,"目前级别分"与"最高级别分"。只
 改变第一个为29,第二个仍为24不动,操作命令为sub(/26/,"29",$0),只替换第一个出现
 24的位置。
 
@@ -414,7 +440,7 @@ create table BILL_USER_SUM1_12
 );
 
 
-cut是一个选取命令,就是将一段数据经过分析,取出我们想要的。一般来说,选取信息通常是针对“行”来进行分析的,
+cut是一个选取命令,就是将一段数据经过分析,取出我们想要的。一般来说,选取信息通常是针对"行"来进行分析的,
 并不是整篇信息分析的
 
 ls SMP* |xargs -n1 cat |wc -l
@@ -474,6 +500,17 @@ gu.sh
 :h:g 打开vim g命令的帮助文档
 :q 关闭帮助文档
 
+vim 一列变两列 (列对其)
+1.复制内容
+2.gg 到首行 
+3.<C-Q> 选择要对齐的列 ，A进入插入模式
+4.<C-V> 粘贴
+
+vi +n filename ：打开文件，并将光标置于第n行首 ###如 view +/5100 rate.cfg
+vi + filename ：打开文件，并将光标置于最后一行首 
+vi +/pattern filename：打开文件，并将光标置于第一个与pattern匹配的串处 
+vi -r filename ：在上次正用vi编辑时发生系统崩溃，恢复filename 
+
 自动补全 Ctrl + p
 
 新建标签页 alt + t <===> :tabnew
@@ -481,6 +518,24 @@ gu.sh
 :r !(Linux/Unix/Windows)command 调用系统命令，并将命令返回的结果插入到当前文件中
 如：:!ping www.baidu.com 
 	:r !ping www.baidu.com
+% 当前打开文件的文件名
+:r ! echo % #将当前文件名插入到文件中 <==> "%p
+:r ! echo %:p #将当前文件的全路径及文件名插入到文件中
+
+vim 的寄存器：
+1.无名（unnamed）寄存器：""，缓存最后一次操作内容；
+2.数字（numbered）寄存器："0 ～ "9，缓存最近操作内容，复制与删除有别, "0寄存器缓存最近一次复制的内容，"1-"9缓存最近9次删除内容
+3.行内删除（small delete）寄存器："-，缓存行内删除内容；
+4.具名（named）寄存器："a ～ "z或"A - "0Z，指定时可用；
+5.只读（read-only）寄存器：":, "., "%, "#，分别缓存最近命令、最近插入文本、当前文件名、当前交替文件名；
+6.表达式（expression）寄存器："=，只读，用于执行表达式命令；
+7.选择及拖拽（selection and drop）寄存器："*, "+, "~，存取GUI选择文本，可用于与外部应用交互，使用前提为系统剪切板（clipboard）可用；
+8.黑洞（black hole）寄存器："_，不缓存操作内容（干净删除）；
+9.模式寄存器（last search pattern）："/，缓存最近的搜索模式。
+
+引用寄存器内容
+normal模式下 "[register]p #如 "1p "%p ""p
+
 
 vim的替换模式：
 r #替换单个字符 
@@ -706,7 +761,7 @@ y$
 拷贝全部内容
 ggyG
 
-**global命令
+**global命令 (g命令)
 帮助命令 :h :g 可以看到global命令的格式是
 :[range]g[lobal]/{parrtern}/[cmd]
 :[range]g[lobal]!/{parrtern}/[cmd]
@@ -875,17 +930,17 @@ Vim 中使用如下的语法对变量进行赋值（创建变量）：
 	let 变量名 = 数值
 变量类型有两种，整数和字符串，在第一次赋值之前都不能使用。变量名除了可使用常规的字母、下划线和数字外，
 还可以使用几种特殊的前缀：
-●“b:”——只对当前缓冲区（buffer）有效的变量；
-●“w:”——只对当前编辑窗口（window）有效的变量。
-●“g:”——全局变量（在函数中访问全局变量必须使用该前缀，不加前缀的话则认为是函数内的局部变量）；
-●“s:”——变量名只在当前脚本中有效；
-●“a:”——函数的参数；
-●“v:”——Vim 内部预定义的特殊变量（参见“:help vim-variable”）。
+●"b:"——只对当前缓冲区（buffer）有效的变量；
+●"w:"——只对当前编辑窗口（window）有效的变量。
+●"g:"——全局变量（在函数中访问全局变量必须使用该前缀，不加前缀的话则认为是函数内的局部变量）；
+●"s:"——变量名只在当前脚本中有效；
+●"a:"——函数的参数；
+●"v:"——Vim 内部预定义的特殊变量（参见":help vim-variable"）。
 下面三个前缀用来访问特殊的数值，由于行为和变量较为相似（可以读取和修改），也放在这儿一起讲：
-●“$”——访问环境变量；
-●“&”——访问 Vim 选项；
-●“@”——访问寄存器。
-当变量不再使用时，可以使用“unlet 变量名”删除变量
+●"$"——访问环境变量；
+●"&"——访问 Vim 选项；
+●"@"——访问寄存器。
+当变量不再使用时，可以使用"unlet 变量名"删除变量
 
 ***Vim 宏记录
   所谓宏记录，就是说vim会记录下你所执行的一个操作序列，然后你可以在记录完成后的任意时间(Normal模式下)一键重复这个操作流。
@@ -1072,7 +1127,18 @@ cut [options] file
 <test cut -f 43 -d, <==>   <test awk -F, '{print$43}'
 whoami|cut -c 8
 
----paste 按列拼接
+----------->uniq
+uniq 命令删除文件中的重复行。 uniq 命令读取由 InFile 参数指定的标准输入或文件。
+该命令首先比较相邻的行，然后除去第二行和该行的后续副本
+常用参数：
+-c 显示输出中，在每行行首加上本行在文件中出现的次数。它可取代- u和- d选项。
+-d 只显示重复行。
+-u 只显示文件中不重复的各行。
+
+使用举例：
+>zcat fs1/76/201409/01/18/50/0760000PJYY009110550020140901185000503B.0.0.gz|awk -F "" '{print substr($0,388,4)}'|sort|uniq -c
+
+--------paste 按列拼接
 参数：
 -d 指定不同于空格或tab键的域分隔符,例如用@分隔域,使用- d @
 -s 将每个文件合并成行而不是按行粘贴
@@ -1118,8 +1184,8 @@ $ date -d@1359820800
 $ Sun Feb 3 00:00:00 CST 2013
 3.date +"%Y-%m-%d %H:%M:%S" ##2014-05-29 14:23:40
 
-~ $ history | awk ‘{CMD[$2]++;count++;} END { for (a in CMD )print CMD[a] ” ” C
-MD[a]/count*100 “% ” a }’ | grep -v “./” | column -c3 -s ” ” -t | sort -nr | nl
+~ $ history | awk ‘{CMD[$2]++;count++;} END { for (a in CMD )print CMD[a] " " C
+MD[a]/count*100 "% " a }’ | grep -v "./" | column -c3 -s " " -t | sort -nr | nl
 | head -n10
 
 
@@ -1142,6 +1208,8 @@ time sh -c 'find . -type f -print | xargs grep -l 18506811050'
 
 zgrep 在不解压.Z文件的情况下搜索文件内容
 
+grep 'regularFixCallPhone' */* ##在当前目录及子目录下的所有文件中搜索
+
 参数：
 -q #禁止输出
 
@@ -1157,7 +1225,48 @@ zgrep 在不解压.Z文件的情况下搜索文件内容
   curl URL --silent -o new_filename #选项-o用来将下载的数据写入指定名称的文件中.
   如:curl www.baidu.com --silent -o baidu.txt 
   curl www.baidu.com -o baidu.txt --progress ## 用--progress代替--silent,显示形如 "#"的进度条
-  
+
+
+----------------->wget 命令
+[from http://www.cnblogs.com/peida/archive/2013/03/18/2965369.html]
+
+wget http://downloadm.fetion-portal.com/Fetion_Android_V5.4.1_gw.apk  #下载该文件到当前目录
+Linux系统中的wget是一个下载文件的工具，它用在命令行下。对于Linux用户是必不可少的工具，
+我们经常要下载一些软件或从远程服务器恢复备份到本地服务器。wget支持HTTP，HTTPS和FTP协议，可以使用HTTP代理 
+1．命令格式：
+wget [参数] [URL地址]
+2．命令功能：
+用于从网络上下载资源，没有指定目录，下载资源会默认为当前目录。wget虽然功能强大，但是使用起来还是比较简单：
+1）支持断点下传功能；这一点，也是网络蚂蚁和FlashGet当年最大的卖点，现在，Wget也可以使用此功能.
+2）同时支持FTP和HTTP下载方式；尽管现在大部分软件可以使用HTTP方式下载，但是，有些时候，仍然需要使用FTP方式下载软件；
+3）支持代理服务器；对安全强度很高的系统而言，一般不会将自己的系统直接暴露在互联网上，所以，支持代理是下载软件必须有的功能；
+4）设置方便简单；可能，习惯图形界面的用户已经不是太习惯命令行了，但是，命令行在设置上其实有更多的优点，最少，鼠标可以少点很多次，也不要担心是否错点鼠标；
+5）程序小，完全免费；程序小可以考虑不计，因为现在的硬盘实在太大了；完全免费就不得不考虑了，即使网络上有很多所谓的免费软件，但是，这些软件的广告却不是我们喜欢的。
+
+4.使用实例
+1)下载单个文件
+wget http://www.minjieren.com/wordpress-3.1-zh_CN.zip
+2)使用wget -O下载并以不同的文件名保存
+wget -O wordpress.zip http://www.minjieren.com/download.aspx?id=1080
+3)使用wget –limit -rate限速下载
+wget --limit-rate=300k http://www.minjieren.com/wordpress-3.1-zh_CN.zip
+注意：当执行wget的时候，它默认会占用全部可能的宽带下载。但是当你准备下载一个大文件，而你还需要下载其它文件时就有必要限速了
+4)使用wget -c断点续传
+wget -c http://www.minjieren.com/wordpress-3.1-zh_CN.zip
+5)使用wget -b后台下载
+wget -b http://www.minjieren.com/wordpress-3.1-zh_CN.zip
+
+
+------------> dig
+
+------------> export 
+(from http://roclinux.cn/?p=1277#more-1277)
+当使用export来导出一个变量时，当前shell就会将此变量放到"导出变量列表"中，一旦在某个时刻需要建立子shell时，
+就会将这个导出变量列表拷贝一份给子shell，这样子shell也就有所应当的看到了这些被导出的变量了.
+在子shell是无法改变父shell中的"导出变量列表"中变量的值的。子shell只能修改自己手里的那份"导出变量列表"中变量的值
+
+export -p
+查看当前shell的导出变量列表
 
 ------------find 命令
 *1、按名字查找 
@@ -1279,6 +1388,12 @@ find . -type f -exec egrep -l " +$" {} \; #找出文件名结尾有空格的文件：
 
 find . -type f -exec egrep -l $'\t' {} \; #找出文件名有tab缩进符的文件
 
+**递归删除文件
+删除某个目录树之下所有给定名字的文件或目录。
+一个典型的例子就是：删除源代码目录下的所有.svn或者.git文件夹
+cd sourcecodedir
+find . -name '*.git*' |xargs rm -rf
+
 ------>yes命令
 yes命令用于重复输出字符串
 yes命令不指定参数时，不断的输出y；指定字符串参数时，就不断的输出该字符串。要终止输出，必须杀掉该进程，比如按Ctrl+C
@@ -1344,13 +1459,16 @@ the current shell environment and ..."。从中可以知道，source命令是在当前进程中执
 source命令用法：
 source FileName
 作用:在当前bash环境下读取并执行FileName中的命令。
-注：该命令通常用命令“.”来替代。
+注：该命令通常用命令"."来替代。
 如：source .bash_rc 与 . .bash_rc 是等效的。
 
 
 ------------------>date 命令
 date "+%Y%m%d %H:%M:%S" ##20140323 14:16:10
 date "+%Y.%m.%d %H:%M:%S"  ##2014.03.23 14:18:27
+date +%w 取得当天是星期几 
+date -d 20120311 +%w 取得2012年3月11日是星期几 或者 date -d 2012-03-11 +%w
+#获取结果：0为星期日，1-6为星期一至星期六
 
 ------------------>read 命令
 如果不指定变量，那么read命令会将接收到的数据放置在环境变量REPLY中
@@ -1410,6 +1528,7 @@ example：shell>temp=/home/temp/1.test
          shell>base=`basename $temp`
          shell>echo $base 
 结果为：1.test
+或者：echo "/home/temp/1.test" | awk -F/ '{print $NF}'
 
 ---------------->dirname
 dirname 是取目录 （从文件的相对目录中提取目录）
@@ -1766,6 +1885,27 @@ EOF`
 echo "$VALUE"
 }
 
+-------------------------->mysql
+ insert into mysql.user(Host,User,Password) values("%","bazar",password("bazar"));
+
+ create database gucb_wpdb;
+ grant all privileges on gucb_wpdb.* to bazar@"%" identified by 'bazar';
+
+ 3.删除用户
+
+ @>mysql -uroot -proot
+ @>密码
+ mysql>Delete FROM mysql.user Where User='bazar' and Host='%';
+ mysql>flush privileges;
+ mysql>drop database gucb_wpdb; //删除用户的数据库
+
+
+删除账户及权限：>drop user 用户名@'%';
+　　　　　　　　>drop user 用户名@ localhost; 
+
+
+drop user bazar@'%';
+
 --------------------------->altibase
 
 altibase 建表
@@ -1900,6 +2040,33 @@ esc + f #往右跳一个单词
 esc + b #往左跳一个单词
 esc + t #交换光标位置前的两个单词
 
+## Vim keystrokes for command line editing
+set -o vi ##跟AIX的ksh shell操作相同了,可以将该命令写入到.bashrc中
+#每个Linux用户目录下都有一个 .bashrc文件，用户可以将自己的设置写到该文件中
+
+Linux用户目录下的(隐藏)配置文件：
+~/.bash_history
+~/.bash_logout
+~/.bash_profile
+~/.bashrc
+~/.gitconfig
+~/.mysql_history
+~/.ssh
+~/.vim
+~/.viminfo
+
+/etc/profile 文件中关于读取 ~/.bashrc , ~/.bash_profile ,. /etc/bash_profile顺序 
+~/.gitconfig
+if [ -e ~/.bashrc ]; then
+    . ~/.bashrc
+elif [ -e ~/.bash_profile ]; then
+    . ~/.bash_profile
+elif [ -e /etc/bash_profile ]; then
+    . /etc/bash_profile
+fi
+
+从脚本可以看出,先找用户目录下的.bashrc 和 .bash_profile文件，如果没有，最才找后找/etc/bash_profile文件
+
 
 ------------------perl
 替换
@@ -2021,6 +2188,26 @@ cat a b | sort | uniq -d > c   # c 是a和b的交集
 
 cat a b b | sort | uniq -u > c   # c 是a和b的不同
 
+-------------------------------------------------######
+1.使用 ^ 删掉多余部分
+$ grep fooo /var/log/auth.log
+$ ^o
+
+2.使用 ^old^new 换掉输错或输少的部分
+$ cat hello.htlm
+$ ^lm^ml
+
+3.使用 !:gs/old/new 将 old 全部换成 new
+$ cat count.awk
+$ !:gs/count/define_func1
+或者
+$ ^count^define_func1^ 
+
+一删二换三全变
+
+使用 !! 执行上一条命令
+
+-------------------------------------------------######
 
 -------------------压缩和解压缩命令
 范例： 
@@ -2133,6 +2320,8 @@ diff 的normal 显示格式有三种提示:
 a - add
 c - change
 d - delete 
+
+-------->patch 命令
 
 ------------>comm 命令
 
@@ -2338,6 +2527,83 @@ echo "${total}"
 
 -----------> expr 命令
 no=`expr ${prov_no} \* 8 + ${prov_no}` ##注意 * 需要转义 ，并且操作数和操作符间有空格
+expr length $str #获取字符串 $str 的长度 <==> echo ${#str}
+
+  ----shell 字符串操作总结
+1.获取字符串长度
+str="abcd"
+expr length $str
+echo ${#str}
+expr "$str" : ".*"
+
+2.查找子串的位置
+str="abc"
+expr index "$str" "a" 
+expr index "$str" "b"
+expr index "$str" "x"
+expr index "$str" ""
+
+3.选取子串
+str="abcdef"
+i=5
+expr substr "$str" 1 3  # 从第一个位置开始取3个字符， abc
+expr substr "$str" 2 "$i"  # 从第二个位置开始取5个字符， bcdef
+expr substr "$str" 4 "$i"  # 从第四个位置开始取5个字符， def
+
+echo ${str:2} #从第二个位置开始提取字符串,bcdef
+echo ${str:2:3} #从第二个位置开始提取3个字符串,bcd
+echo ${str:(-6):5} #从倒数第二个位置向左提取字符串,abcde
+echo ${str:(-4):3} #从倒数第二个位置向左提取字符串,cde
+
+4.截取字串
+str="abbc,def,ghi,abcjkl"
+echo ${str#a*c} #输出,def,ghi,abcjkl  一个井号(#) 表示从左边截取掉最短的匹配 (这里把abbc字串去掉)
+echo ${str##a*c} #输出jkl，两个井号(##) 表示从左边截取掉最长的匹配 (这里把abbc,def,ghi,abc字串去掉)
+echo ${str#"a*c"}   # 输出abbc,def,ghi,abcjkl 因为str中没有"a*c"子串
+echo ${str##"a*c"}  # 输出abbc,def,ghi,abcjkl 同理
+echo ${str#*a*c*}   # 空
+echo ${str##*a*c*}  # 空
+echo ${str#d*f}     # 输出abbc,def,ghi,abcjkl
+echo ${str#*d*f}    # 输出,ghi,abcjkl   
+ 
+echo ${str%a*l}     # abbc,def,ghi,  一个百分号(%)表示从右边截取掉最短的匹配 
+echo ${str%%b*l}    # a             两个百分号表示(%%)表示从右边截取最长的匹配
+echo ${str%a*c}     # abbc,def,ghi,abcjkl
+可以这样记忆, 井号（#）通常用于表示一个数字，它是放在前面的；百分号（%）卸载数字的后面;
+或者这样记忆，在键盘布局中，井号(#)总是位于百分号（%）的左边(即前面) 
+
+5.字符串替换
+str="apple ,tree,tree apple"
+echo ${str/apple/APPLE}   # 替换第一次出现的apple
+echo ${str//apple/APPLE}  # 替换所有apple
+ 
+echo ${str/#apple/APPLE}  # 如果字符串str以apple开头，则用APPLE替换它
+echo ${str/%apple/APPLE}  # 如果字符串str以apple结尾，则用APPLE替换它
+
+6.字符串比较
+[[ "a.txt" == a* ]] # 逻辑真 (pattern matching)
+[[ "a.txt" =~ .*\.txt ]] # 逻辑真 (regex matching)
+[[ "abc" == "abc" ]] # 逻辑真 (string comparision) 
+[[ "11" < "2" ]] # 逻辑真 (string comparision), 按ascii值比较
+
+7.字符串连接
+s1="hello"
+s2="world"
+echo ${s1}${s2}?? # 当然这样写 $s1$s2 也行，但最好加上大括号
+
+
+${#string}  # $string 的长度
+${string:position} #在$string中, 从位置$position开始提取子串
+${string:position:length} #在$string中, 从位置$position开始提取长度为$length的子串
+
+------>shell 生成随机数
+echo $RANDOM 
+
+#/dev/random设备，存储着系统当前运行的环境的实时数据。它可以看作是系统某个时候，唯一值数据，因此可以用作随机数元数据
+head -200 /dev/urandom | cksum | cut -f1 -d" "
+
+cat /proc/sys/kernel/random/uuid| cksum | cut -f1 -d" " ##只适用于Linux
+
 
 ---------->declare 命令
 declare或typeset内建命令(它们是完全相同的)可以用来限定变量的属性.这是在某些编程语言中使用的定义类型不严格的方式。
@@ -2352,6 +2618,10 @@ declare -a indices  #变量indices会被当作数组.
 -f 函数
 declare -f  #在脚本中没有带任何参数的declare -f 会列出所有在此脚本前面已定义的函数出来。
 declare -f function_name ##而declare -f function_name则只会列出指定的函数
+
+------------>ln 命令
+ln 建软链接
+ln -sf /ngbss/billdata/data5/ bdata #将bdata 链接到/ngbss/billdata/data5/目录
 
 
 ***shell脚本特殊参数
@@ -2444,6 +2714,13 @@ useradd 选项 用户名
 
 
 su - bazar #切换用户
+
+?? linux新建用户后shell无法自动补全命令，Backspace无法删除字符，无法翻看输入纪录,提示符仅仅是一个$
+输入 ll的时候会输出 -sh: 1: ll: not found
+解决： 
+linux 新建的用户默认的shell是/bin/sh
+只需要将/etc/passwd 文件中对应用户的shell 更改或者添加为 /bin/bash 即可
+
 
 -------->Unix 环境变量：
 	常见环境变量：
@@ -2560,6 +2837,11 @@ goto : 走到程序的多少行
 s ： 进入函数体里面执行
 
 
+-----> core 文件
+$ dbx pp core 
+> which
+
+
 ------------> gcc 编译器
 linux下的cc默认是指向gcc的。
 
@@ -2640,7 +2922,7 @@ Breakpoint 2 at 0x8048456: file tst.c, line 5.
 Num Type           Disp Enb Address    What
 1   breakpoint     keep y   0x08048496 in main at tst.c:16
 2   breakpoint     keep y   0x08048456 in func at tst.c:5
-(gdb) r           <--------------------- 运行程序，run命令简写
+(gdb) r           <--------------------- 运行程序，run命令简写 (如果程序有参数的话，加参数 如 run -c7100,run file_trans.txt a.txt)
 Starting program: /home/hchen/test/tst
 
 Breakpoint 1, main () at tst.c:17    <---------- 在断点处停住。
