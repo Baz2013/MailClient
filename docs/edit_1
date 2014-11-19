@@ -89,6 +89,11 @@ OFS     输出域分隔符
 ORS     输出记录分隔符  
 RS      控制记录分隔符  
 
+NR及FNR的区别
+NR ：全局行数（第二个文件的第一行接着第一个文件尾行数顺序计数）
+FNR：当前文件自身的行数（不考虑前几个输入文件的自身行数及总数）
+
+
 使用举例：
 获取字符串的字段数
 echo "2257/2255/202/1464/203"|awk -F"/" '{print NF}'  ## 输出 5
@@ -121,6 +126,10 @@ index(s,t)函数返回目标字符串s中查询字符串t的首位置。length函数返回字符串s字符
 结果字符串exp。sub(r,s)函数将用s替代$0中最左边最长的子串，该子串被(r)匹配。
 sub(s,p)返回字符串s在位置p后的后缀。substr(s,p,n)同上，并指定子串长度为n。
 现在看一看awk中这些字符串函数的功能。
+
+sub和gsub的区别
+sub匹配第一次出现的符合模式的字符串，相当于 sed 's//' 
+gsub匹配所有的符合模式的字符串，相当于 sed 's//g'  
 
 1.gsub
 要在整个记录中替换一个字符串为另一个，使用正则表达式格式，/目标模式/，替换模式
@@ -317,6 +326,10 @@ $ awk '{print ($1 > 5 ? "ok "$1: "error"$1)}' test-----如果第一个域大于5则打印问
 $ awk '/^root/,/^mysql/' test----打印以正则表达式root开头的记录到以正则表达式mysql开头的记录范围内的所有记录。
 	如果找到一个新的正则表达式root开头的记录，则继续打印直到下一个以正则表达式mysql开头的记录为止，或到文件末尾。
 
+注意：
+当$1，$2等等有一个被改变，$0就会通过使用OFS分割字段而被重建
+awk -F"," 'BEGIN{OFS=","}{$25="0"$25;print $0}'  test.txt #这时候需要重新指定输出字段分隔符
+
 
 ##################################
 
@@ -493,6 +506,23 @@ ls|awk -F. '{printf "mv %s %s.1309.%s", $0, $1, $3}'|xargs -i sh -c "{}"
 ls GPP*|awk -F. '{printf "mv %s %s.1309.%s\n", $0, $1, $3}' >>gu.sh 
 chmod 777 gu.sh
 gu.sh 
+
+----------------->chown 
+改变文件的拥有者和群组。在更改文件的所有者或所属群组时，可以使用用户名称和用户识别码设置。
+普通用户不能将自己的文件改变成其他的拥有者。其操作权限一般为管理员
+参数:
+-c 显示更改的部分的信息
+-f 忽略错误信息
+-h 修复符号链接
+-R 处理指定目录以及其子目录下的所有文件
+-v 显示详细的处理信息
+-deference 作用于符号链接的指向，而不是链接文件本身
+举例:
+chown oracle:dba tnsnames.ora
+chown -R billing1:ngbss data1
+
+------------>ifconfig
+ifconfig命令通常用来显示系统中的网络接口(网卡)信息,也可以用来配置网络接口
 
 -------------------->vi (vim)
 
@@ -1047,6 +1077,24 @@ A. N 命令
   把下一行的内容纳入当前缓冲区做匹配
 sed 'N;s/my/your/' pets.txt
 sed 'N;s/\n/,/' pets.txt
+
+sed 打印匹配行和匹配行的下一行
+
+例如:在匹配到Tile后,打印Title所在的行和它的下一行
+Let's assume that you have a large log file 
+called log which contains thousands of lines
+Justin Timberlake, Title 
+545 Taylor Swift
+The sed equivalent would be
+723Mick Jagger, Title 
+610Lady Gaga
+
+命令:
+sed -n '/Title/{N;p}' test_sed.txt ##注意N是大写的,sed 加上参数 -n ,可以在Linux系统上执行,在AIX上执行报错
+grep -A 1 'Title'  test_sed.txt  ##可以在Linux系统上执行,在AIX上执行报错
+awk '/Title/{getline a;print $0"\n"a}' test_sed.txt ##Linux 和 AIX都可以
+sed -n '/Title/,+1p' test_sed.txt ##可以在Linux系统上执行,在AIX上执行报错
+sed '/pattern/{p;n;p}' test_sed.txt ##打印匹配行及匹配行的前一行和后一行
 
 B.a命令和i命令
   a命令就是append, i命令就是insert,它们是用来添加行的
@@ -1723,6 +1771,39 @@ SELECT SEGMENT_NAME, TABLESPACE_NAME, SUM(BYTES / 1024 / 1024) || 'M' AS data_SP
  GROUP BY SEGMENT_NAME, TABLESPACE_NAME
  ORDER BY data_SPACE;
 
+----查看表空间语句
+SELECT UPPER(F.TABLESPACE_NAME) "表空间名", 
+　　D.TOT_GROOTTE_MB "表空间大小(M)", 
+　　D.TOT_GROOTTE_MB - F.TOTAL_BYTES "已使用空间(M)", 
+　　TO_CHAR(ROUND((D.TOT_GROOTTE_MB - F.TOTAL_BYTES) / D.TOT_GROOTTE_MB * 100, 
+　　2), 
+　　'990.99') "使用比", 
+　　F.TOTAL_BYTES "空闲空间(M)", 
+　　F.MAX_BYTES "最大块(M)" 
+　　FROM (SELECT TABLESPACE_NAME, 
+　　ROUND(SUM(BYTES) / (1024 * 1024), 2) TOTAL_BYTES, 
+　　ROUND(MAX(BYTES) / (1024 * 1024), 2) MAX_BYTES 
+　　FROM SYS.DBA_FREE_SPACE 
+　　GROUP BY TABLESPACE_NAME) F, 
+　　(SELECT DD.TABLESPACE_NAME, 
+　　ROUND(SUM(DD.BYTES) / (1024 * 1024), 2) TOT_GROOTTE_MB 
+　　FROM SYS.DBA_DATA_FILES DD 
+　　GROUP BY DD.TABLESPACE_NAME) D 
+　　WHERE D.TABLESPACE_NAME = F.TABLESPACE_NAME 
+　　ORDER BY 4 DESC ;
+
+
+SELECT SUM(A.BYTES)/1024/1024/1024 FROM sys.Dba_Segments a WHERE a.owner = 'UCR_SD01' AND A.segment_name = 'TG_CDR01';
+
+SELECT * FROM SYS.DBA_DATA_FILES a WHERE a.tablespace_name = 'TBS_BIL_GS01';
+
+--增加表空间文件
+alter tablespace TBS_BIL_GS01 add datafile '/orabill2/ngbill/TBS_BIL_GS01_02.dbf' size 16G; 
+
+--扩表空间
+ALTER DATABASE DATAFILE '/oraact2/ngact/TBS_ACT_USER.dbf' RESIZE 16G;
+
+
 
 查看锁表语句
 SELECT SESS.SID,
@@ -1807,7 +1888,7 @@ SQL> shutdwon abort;
 以下为引用的内容：
 oracle@suse92:~> lsnrctl start
 
-　　4、停止监听器
+4、停止监听器
 以下为引用的内容：
 oracle@suse92:~> lsnrctl stop
 
@@ -1817,8 +1898,22 @@ oracle@suse92:~> lsnrctl
 LSNRCTL> status
 LSNRCTL> exit 
 
+---Oracle 起监听 起服务
+[u@H /data/billing8/]$su - root
+root's Password: 
+# su - oracle
+cd $TNS_ADMIN
+cd $ORACLE_HOME
+export ORACLE_SID=act7
+export ORACLE_SID=act8
+[oracle@p780test4 /oracle]$export ORACLE_SID=act8
+[oracle@p780test4 /oracle]$lsnrctl start ### 起监听 ,后会自动退出
+[oracle@p780test4 /oracle]$sqlplus sys/sys as sysdba ##起服务 
+
+
 sqlplus后台执行
 nohup sqlplus ucr_sd01/ucr_sd01@yzbillin @gs1.sql >gs1.log &
+nohup sqlplus sqlplus ucr_param/ucr_param@ACT5 @A3--TD_FIXPHONE_SEG.sql >A3.log &
 
 oracle新建用户（用system用户）
 create user ucr_sd02 identified by ucr_sd02;
@@ -1885,6 +1980,104 @@ EOF`
 echo "$VALUE"
 }
 
+** ORACLE SEQUENCE用法
+1.create seqence
+
+CREATE SEQUENCE seqTest
+INCREMENT BY 1 -- 每次加几个
+START WITH 1 -- 从1开始计数
+NOMAXvalue -- 不设置最大值
+NOCYCLE -- 一直累加，不循环
+CACHE 10; --设置缓存cache个序列，如果系统down掉了或者其它情况将会导致序列不连续，也可以设置为---------NOCACHE
+
+2.取得sequence值
+    CurrVal：返回 sequence的当前值 
+    NextVal：增加sequence的值，然后返回 增加后sequence值
+
+	取得sequence值
+	SELECT Sequence名称.CurrVal FROM DUAL; 
+	如：select seqTest.currval from dual;
+
+	在Sql语句中可以使用sequence的地方： 
+    - 不包含子查询、snapshot、VIEW的 SELECT 语句 
+    - INSERT语句的子查询中 
+    - INSERT语句的values中 
+    - UPDATE 的 SET中
+如在插入语句中
+insert into 表名(id,name)values(seqtest.Nextval,'sequence 插入测试');
+
+注意：
+	-第一次nextval返回的是初始值,随后的nextval自动增加定义的increment by值,然后返回增加后的值.
+	-currval总是返回当前sequence的值,但是第一次nextval初始化之后才能使用currval,否则会出错.
+	- 一次nextval会增加一次sequence的值,所有在同一个语句里使用多个nextval,其值是不一样的.
+	- 如果指定cache值,Oracle就可以预先在内存里放置一些sequence,这样存取的块些.cache里面的取完后,Oracle自动再取一组到cache.
+	使用cache或许会跳号,比如数据库不正常down掉,cache中的sequence就会丢失.所以可以在create sequence的时候用nocache防止这种情况
+
+3.Alter sequence
+	拥有alter any sequence权限才能改动sequence。可以alterstart至以外的所有sequence参数.如果想要改变start值,必须drop sequence再recreate
+	例如：alter sequence SEQTEST maxvalue 9999999;
+
+4.drop sequence
+	DROP SEQUENCE seqTest; 
+
+5.举例
+create sequence SEQ_ID
+minvalue 1
+maxvalue 99999999
+start with 1
+increment by 1
+nocache
+order;
+
+建解发器代码为：
+
+create or replace trigger tri_test_id
+  before insert on S_Depart   --S_Depart 是表名
+  for each row
+declare
+  nextid number;
+begin
+  IF :new.DepartId IS NULLor :new.DepartId=0 THEN --DepartId是列名
+    select SEQ_ID.nextval --SEQ_ID正是刚才创建的
+    into nextid
+    from sys.dual;
+    :new.DepartId:=nextid;
+  end if;
+end tri_test_id;
+
+    注：:new 代表 数据改变后的新值，相对应的有 :old 原值
+          := 代表 赋值
+          :nextid表示引用sqlplus中定义的变量 
+
+----oracle 动态语句
+SELECT 'SELECT a.a1,a.aname,b.b1,a.a1-b.b1 sub_a_b from (SELECT COUNT(*) a1, '''||t.TABLE_NAME||''' aname FROM ucr_param.' || T.TABLE_NAME ||
+       ')a,(SELECT COUNT(*) b1 FROM ucr_param.' || T.TABLE_NAME ||
+       '@rac56_41_to_dgact5 )b WHERE a.a1 <> b.b1 union all'
+  FROM ALL_TABLES T
+ WHERE T.OWNER = 'UCR_PARAM'
+   AND T.TABLE_NAME LIKE 'TD_%'; 
+##比对两个用户下对应表的数据条数是否相同
+##oracle 单引号转义 
+SELECT A.A1, A.ANAME, B.B1, A.A1 - B.B1 SUB_A_B
+  FROM (SELECT COUNT(*) A1, 'TD_APNNI_GROUP_TYPE' ANAME
+          FROM UCR_PARAM.TD_APNNI_GROUP_TYPE) A,
+       (SELECT COUNT(*) B1
+          FROM UCR_PARAM.TD_APNNI_GROUP_TYPE@RAC56_41_TO_DGACT5) B
+ WHERE A.A1 <> B.B1
+UNION ALL
+
+---oracle 索引,主键的删除更改及创建
+DROP INDEX UCR_PARAM.PK_ACT_PARAM_66;
+create unique index UCR_PARAM.PK_ACT_PARAM_66 on UCR_PARAM.TD_FIXPHONE_SEG(AREA_CODE, EXCHANGE_CODE, BEGIN_PHONE, PHONE_SEG)
+
+alter table UCR_PARAM.TD_FIXTRASH_PTP
+  add constraint PK_TD_FIXTRASH_PTP primary key (MSC, AREA_CODE, FLAG, PHONE, BEGIN_TIME)
+
+----oracle建同义词
+-- Grant/Revoke object privileges 
+create or replace synonym UOP_PARAM.td_b_monthly_discount_rel for UCR_PARAM.td_b_monthly_discount_rel;
+grant select, insert, update, delete on UCR_PARAM.td_b_monthly_discount_rel to UOP_PARAM;
+
 -------------------------->mysql
  insert into mysql.user(Host,User,Password) values("%","bazar",password("bazar"));
 
@@ -1905,6 +2098,12 @@ echo "$VALUE"
 
 
 drop user bazar@'%';
+
+**mysql 启动服务/停止服务
+Debian / Ubuntu Linux 
+1.启动：/etc/init.d/mysql start
+2.停止：/etc/init.d/mysql stop
+3.重启：/etc/init.d/mysql restart
 
 --------------------------->altibase
 
@@ -1977,6 +2176,19 @@ cat list2|xargs -i sh -c "imp ucr_sd/ucr_sd@yzbillin file=./tmp/{}.dmp fromuser=
 exp 导出数据库中的某个用户:
 exp UCR_AUTOACCT/UCR_AUTOACCT@ACT1  owner=UCR_AUTOACCT  rows=y  indexes=n  compress=n  buffer=65536 feedback=100000
 file=UCR_AUTOACCT.dmp log=exp.log
+
+
+--------------------->impdb/expdb 命令
+select * from dba_directories;
+
+/*DROP directory  DPUMPDIR;*/
+create or replace directory  DPUMPDIR as  'dir_name'
+grant read ,write on directory  DPUMPDIR  to UCR_PARAM;
+
+impdp system/temsys@ACT5  DIRECTORY=aa DUMPFILE=ACT5_UCR_PARAM_1009.dmp    schemas=ucr_param   TABLE_EXISTS_ACTION=replace
+
+impdb 按用户导入dmp文件的时候,dmp文件所在的目录必须是Oracle用户的目录
+
 
 =======================> bash shell 快捷键
 生活在 Bash shell 中，熟记以下快捷键，将极大的提高你的命令行操作效率。
@@ -2334,6 +2546,21 @@ d - delete
 ------------->w命令
 可以使用 w 命令来代替 uptime。w 也提供关于当前系统登录用户和用户所进行工作的相关信息
 
+------------>type命令
+type为内置命令
+可以查找别名,函数,内置命令
+如:
+[u@H /ngbss/billing5]$type rate
+rate is /ngbss/billing5/bin/rate
+[u@H /ngbss/billing5]$type awk
+awk is /usr/bin/awk
+[u@H /ngbss/billing5]$type grep
+grep is a tracked alias for /usr/bin/grep
+[u@H /ngbss/billing5]$type ll
+ll is an alias for ls -l
+
+比which命令强大些
+
 ------------>crontab 命令
 /sbin/service crond start //启动服务 
 /sbin/service crond stop //关闭服务 
@@ -2457,6 +2684,7 @@ fi
 [ "$a" = "$b" ] ：判断$a和$b是否相等 或者 [ "$a" -eq "$b" ]
 [ -z "$1" ] #判断指定的变量是否存在值
 [ -d "$LOG_DIR" ] #判断目录是否存在 [ ! -d "$LOG_DIR" ] 目录不存在为真
+[ -s "$file_name" ] #文件大小非0时为真
 
 例1：
 #!/bin/sh
@@ -2839,7 +3067,7 @@ s ： 进入函数体里面执行
 
 -----> core 文件
 $ dbx pp core 
-> which
+>where  
 
 
 ------------> gcc 编译器

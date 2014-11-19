@@ -35,3 +35,7 @@ awk '$3>max{max=$3}END{print "Max=",max}' countries
 awk 'BEGIN{min=99999999}$3<min{min=$3}END{print "Min=",min}' countries 
 
 ls 076*|xargs zcat|grep 0760000PJYY00910929002014082511000020BW|awk -F "" 'substr($1,176,3)==559'
+awk -F "" '{tmp=substr($1,13,8);gsub(/[ \t]+/,"",tmp);printf("%s,",tmp)}'  ##去除字段中的空格
+
+
+awk '$4 == "Asia"{ pop = pop + $3; n = n + 1 }END{ print "Total population of the", n,"Asian countries is", pop, "million."}' countries
