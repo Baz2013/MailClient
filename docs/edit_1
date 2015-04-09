@@ -40,6 +40,7 @@ ll|awk '$1 ~ /^-.*/ && $6 ~ /(Jun|Feb)/ && $7 ~ /1[0-9]+/ '
 **输出函数printf
 **正则表达式
 **获得外部变量
+**awk脚本
 
 echo -e '包含转义序列的字符串' 如：echo -e '1\n2\n3\n' (Linux环境)
 echo  '1\n2\n3\n' (Uinx环境)
@@ -313,6 +314,16 @@ awk '!a[$0]++'
 ps -ef|grep "rate..c"|grep -v grep|awk '{printf "kill %s && rate %s\n", $2, $NF}'|xargs -i sh -c "{}"
 ps -ef|grep "rate"|grep 'c[0-9]\{4\}'|awk '{printf "kill %s && rate %s\n", $2, $NF}'|xargs -i sh -c "{}"
 
+9)
+seq 40|awk 'i=!i' ##产生奇数序列
+
+10)awk 按文件中的某一列拆分文件
+$seq 1000 >>example
+$awk '{post=$1%100 ;print $0 > "aa_"post".txt"}' example
+[bazar@iZ25r06n0jfZ /home/bazar/user/gucb]$ls aa*.txt|wc -l
+100
+
+
 **正则表达式
 
 $ awk '/^(no|so)/' test-----打印所有以模式no或so开头的行。
@@ -329,6 +340,12 @@ $ awk '/^root/,/^mysql/' test----打印以正则表达式root开头的记录到以正则表达式mys
 注意：
 当$1，$2等等有一个被改变，$0就会通过使用OFS分割字段而被重建
 awk -F"," 'BEGIN{OFS=","}{$25="0"$25;print $0}'  test.txt #这时候需要重新指定输出字段分隔符
+
+***awk脚本
+awk -vN=80 -f f2.awk #向awk脚本传递参数
+$ cat paramTest.awk
+BEGIN{ n=N; p=P; print n,p}
+$ awk -vN=10 -vP=20 -f paramTest.awk 
 
 
 ##################################
@@ -530,6 +547,8 @@ ifconfig命令通常用来显示系统中的网络接口(网卡)信息,也可以用来配置网络接口
 :h:g 打开vim g命令的帮助文档
 :q 关闭帮助文档
 
+set syntax=c ##将非.c文件以C语言文件方式高亮显示
+
 vim 一列变两列 (列对其)
 1.复制内容
 2.gg 到首行 
@@ -565,6 +584,10 @@ vim 的寄存器：
 
 引用寄存器内容
 normal模式下 "[register]p #如 "1p "%p ""p
+或者:在insert 模式下 Ctrl + r 然后输入寄存器的名字,就可以把寄存器中的内容插入到当前光标处
+
+插入一个数字序列到当前文件中:
+Ctrl + r 进入到命令模式,然后输入=range(10) 回车
 
 
 vim的替换模式：
@@ -577,11 +600,30 @@ G 光标到最后一行
 dd 删除当前行,2dd删除当前和后边的两行,ndd删除n行
 D 删除从当前光标到光标所在行尾的内容 <===>d$
 d0 删除从当前光标到光标所在行首的内容
+dj  #删除当前行和下一行  (command + motion 模式)
+dG
+dgg
+d3k
 
 **交换文件中的相邻的两行、两个单词、两个字符
 ddp #交换两行
 dwp #交换两个单词
 xp  #交换两个字符
+
+
+***vim test object
+vaw  #选中一个单词,包括后边的空格
+viw  #选中一个单词,不包括空格
+vap  #p表示段落
+vip 
+va)
+vi)
+va>
+vi>
+va"
+vi"
+va}
+vi}
 
 
 按单词移动：
@@ -791,6 +833,18 @@ y$
 拷贝全部内容
 ggyG
 
+**vim 替换命令(s 命令)
+语法: [range]s/pattern/string/[flags]
+注意:
+1)range 和 flags是可选的,range为空,默认替换当前行,没有flags,默认只替换一处
+2)分隔符是可选的,如匹配模式中含有"/"的话,可以使用","为分隔符,这样可以省去转义"/"的麻烦
+3)flags 可以为g(替换匹配到的所有字符串),i(忽略大小写),g和i可以同时使用
+4)range %表示整个文件,3,6表示3-6行,.号表示当前行,如3,. 表示从第三行替换到当前行,3,$表示从第三行替换到最后一行
+  还可以使用相对位置
+  .,+5
+  -5,.
+
+
 **global命令 (g命令)
 帮助命令 :h :g 可以看到global命令的格式是
 :[range]g[lobal]/{parrtern}/[cmd]
@@ -840,7 +894,7 @@ ggVG
 gg=G
 合并两行
 J(移动光标到前一行的行尾，按下J)
-合并多行：
+合并多行(列变行)：
 Ctrl-Q 移动光标 按下J  ##没有最快，只有更快
 
 vim 排序
@@ -996,6 +1050,10 @@ Vim 中使用如下的语法对变量进行赋值（创建变量）：
  
  例2:生成1-100的数字序列
   1<ESC>qayyp<C-A>q98@a
+
+***K 命令
+在Python文件中,光标移到到关键字上按下K可以查看Python文档 ###very good
+Perl也可以,前提是已经安装了Perl帮助文档
 
 --------------------->sed
 
@@ -1207,6 +1265,7 @@ paste t1 t2
 
 2.将t1文件中的列变行,并以空格分隔
 paste -s -d " " t1 <===> awk '{printf "%s ",$0}' t1
+paste -sd, a.txt  ##以逗号为分割符
 
 3.行变列
 paste -s -d " " t1 | tr ' ' '\n'    
@@ -1315,6 +1374,9 @@ wget -b http://www.minjieren.com/wordpress-3.1-zh_CN.zip
 
 export -p
 查看当前shell的导出变量列表
+
+
+-------->objdump 和 xxd 命令
 
 ------------find 命令
 *1、按名字查找 
@@ -1828,6 +1890,8 @@ select * from ucr_err_shx01.TG_CDR_PP_ERR_SM as of timestamp(to_timestamp('20140
 CREATE TABLE find_data AS
 select * from ucr_err_shx01.TG_CDR_PP_ERR_SM as of timestamp(to_timestamp('20140417194700', 'yyyymmddhh24miss')) where 1=1;
 
+
+****oracle dblink 
 建dblink语句
 create database link to_dgbil8
 　　connect to uqry identified by xPgg4nTq
@@ -1838,6 +1902,42 @@ create database link to_dgbil8
       (SERVICE_NAME = dgbil8)
     )
   )';
+
+查看dblink
+select owner,object_name from dba_objects where object_type='DATABASE LINK';
+或者
+select * from dba_db_links;
+
+删除dblink:
+DROP database link to39act;
+
+
+***dblink 错误
+oracle连接DBLINK报错:ORA-12154: TNS:could not resolve service name的解决办法
+原因是建dblink的时候 using 后边的 引号里加服务名了
+如下边的第一个就是错误的
+create database LINK to39act
+　　connect to UCR_PARAM6 identified by UCR_PARAM6
+　　using '39NGACT = /**错误*/
+(DESCRIPTION =
+    (ADDRESS = (PROTOCOL = TCP)(HOST = 10.124.0.39)(PORT = 1521))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = ngact)
+    )
+)';
+
+---正确的
+create database LINK to39act
+　　connect to UCR_PARAM6 identified by UCR_PARAM6
+　　using '(DESCRIPTION =
+    (ADDRESS = (PROTOCOL = TCP)(HOST = 10.124.0.39)(PORT = 1521))
+    (CONNECT_DATA =
+      (SERVER = DEDICATED)
+      (SERVICE_NAME = ngact)
+    )
+)';
+
 
 
 在linux操作系统下，如何启动服务与监听命令？首先必须以oracle用户登陆：
@@ -1924,11 +2024,24 @@ grant EXP_FULL_DATABASE to ucr_sd02;
 或者
 grant imp_full_database to ucr_sd02；
 
+--创建用户并指定表空间
+create user bocodb identified by bocodb
+default tablespace bocodbdbs
+temporary tablespace bocodbtempdbs;
+
+
+更改oracle用户的默认表空间:
+alter USER ucr_gx01 default tablespace TBS_BIL_D03;
+
 
 oracle 表重命名
 alter table  ucr_sd01.tg_cdr12  rename to ucr_sd01.tg_cdr12_bak0124;
 或者：rename pdba to dba; 
 
+DBA_
+  记录数据库实例的所有对象的信息，如DBA_USERS包含数据库实例中
+所有用户的信息，DBA的信息包含user和all的信息；
+SELECT * from DBA_USERS;
 
 
 #表cdr3g_gs_user1w的user_id建了索引（表的数据量约是800万） 
@@ -2078,6 +2191,30 @@ alter table UCR_PARAM.TD_FIXTRASH_PTP
 create or replace synonym UOP_PARAM.td_b_monthly_discount_rel for UCR_PARAM.td_b_monthly_discount_rel;
 grant select, insert, update, delete on UCR_PARAM.td_b_monthly_discount_rel to UOP_PARAM;
 
+----oracle sqlplus :
+sqlplus 中使用外部shell命令
+SQL> ho command
+或者
+SQL> !command
+例如:列出当前目录下的所有文件
+SQL> ho ls
+SQL> !ls 
+
+用sqlplus导入数据(insert 语句文件)时,如果想记录输出的日志,可以在导入文件的开始和结尾加入如下语句
+spool import.log
+....
+spool off
+
+***Oracle 解锁用户,修改用户口令(密码)
+su - oracle ##以root用户登录,然后切换oracle用户
+export ORACLE_SID=tess78  ###tess78 为连接串的SERVICE_NAME
+sqlplus sys/sys as sysdba
+alter user scott account unlock;// 然后解锁
+conn scott/tiger //弹出一个修改密码的对话框，修改一下密码就可以了
+
+**更改用户口令
+alter user ubak identified BY ubak_123;
+
 -------------------------->mysql
  insert into mysql.user(Host,User,Password) values("%","bazar",password("bazar"));
 
@@ -2177,8 +2314,21 @@ exp 导出数据库中的某个用户:
 exp UCR_AUTOACCT/UCR_AUTOACCT@ACT1  owner=UCR_AUTOACCT  rows=y  indexes=n  compress=n  buffer=65536 feedback=100000
 file=UCR_AUTOACCT.dmp log=exp.log
 
+exp ucr_bj01/ucr_bj01@40ngbill  owner=ucr_bj01  rows=n  indexes=n  compress=n  buffer=65536 feedback=100000 file=ucr_bj01.dmp log=exp.log
+rows=y表示数据和结构都导出
+rows=n只导出结构，不导数据
+inexes=n 不导出索引
+inexes=y 导出索引
 
---------------------->impdb/expdb 命令
+查看oracle某个用户下有多少种对象类型，以及每种类型中对象的个数
+SELECT OBJECT_TYPE, COUNT(*) FROM ALL_OBJECTS WHERE OWNER = 'UCR_BJ01' GROUP BY OBJECT_TYPE;
+
+imp 按用户导入数据:
+nohup imp system/temsys@ACT6   BUFFER=64000 FILE=/oradata3/dump/act6_ucr_param_1114.dmp log=dible_db  ignore=y  FROMUSER=ucr_param TOUSER=ucr_param  &
+
+--------------------->impdp/expdp 命令
+IMP只适用于EXP导出的文件，不适用于EXPDP导出文件；IMPDP只适用于EXPDP导出的文件，而不适用于EXP导出文件。
+
 select * from dba_directories;
 
 /*DROP directory  DPUMPDIR;*/
@@ -2190,8 +2340,53 @@ impdp system/temsys@ACT5  DIRECTORY=aa DUMPFILE=ACT5_UCR_PARAM_1009.dmp    schem
 impdb 按用户导入dmp文件的时候,dmp文件所在的目录必须是Oracle用户的目录
 
 
+SELECT privilege, directory_name, DIRECTORY_PATH FROM user_tab_privs t,dba_directories d
+ WHERE t.table_name(+) = d.directory_name ORDER BY 2, 1;
+
+ create directory dir_dp_gu as '/oracle/data'; --该路径必须有oracle用户的读写权限,最好在主机上用oracle用户建该目录,
+--- 如果没有oracle用户的读写权限的话在后边导出数据的时候报 ORA-39070: Unable to open the log file
+ Grant read,write on directory dir_dp_gu to ucr_param;
+ expdp ucr_param/ucr_param@ACT8 schemas=ucr_param directory=dir_dp_gu dumpfile =expdp_test1.dmp logfile=expdp_test1.log;
+ 
+添加ORACLE环境变量:
+root用户下
+/etc/profile
+ORACLE_BASE=/oracle/product/11.2.0/db_1
+ORACLE_HOME=/oracle/product/11.2.0/db_1
+export ORACLE_BASE ORACLE_HOME
+
+注意:
+修改profile配置文件的时候一定要备份,添加环境变量的时候一定要加全了,/usr/bin 和 /bin 这两个目录一定要在PATH中存在
+如 PATH=$ORACLE_HOME ,只有这一行的话, . /etc/profile后,所有命令都不能使用了
+(这种情况下只能到/usr/bin下以 ./vi /etc/profile方式打开配置文件,并修改)
+
+nohup impdp UCR_PARAM6/UCR_PARAM6@39NGACT DIRECTORY=dir_dp_gu DUMPFILE=expdp_test6.dmp TABLE_EXISTS_ACTION=replace  schemas=ucr_param remap_schema=ucr_param:UCR_PARAM6 &
+##schemas 为导出dmp文件的用户,remap_schema=导出用户:导入用户
+
+
+##数据导完后,稽核条数的动态语句
+SELECT 'select a.a1,a.aname,b.b1,b.bname,a.a1 - b.b1 from (select count(*) a1,''' || T.TABLE_NAME || ''' aname from ' ||
+         T.OWNER || '.' || T.TABLE_NAME ||')a ,(select count(*) b1,''' || T.TABLE_NAME || ''' bname from ' ||
+         'UCR_PARAM8' || '.' || T.TABLE_NAME||'@to_39NGACT)b where a.a1 - b.b1 <>0 union all'
+    FROM ALL_TABLES T
+   WHERE T.OWNER = UPPER('ucr_param');
+
+
+SELECT 'select a.a1,a.aname,b.b1,b.bname,a.a1 - b.b1 from (select count(*) a1,''' || T.TABLE_NAME || ''' aname from ' ||
+         T.OWNER || '.' || T.TABLE_NAME ||')a ,(select count(*) b1,''' || T.TABLE_NAME || ''' bname from ' ||
+         'UCR_PARAM6' || '.' || T.TABLE_NAME||'@to_39NGACT)b where a.a1 - b.b1 <>0 union all'
+    FROM ALL_TABLES T
+   WHERE T.OWNER = UPPER('ucr_param');
+
+--------------oracle日常管理
+  select username,default_tablespace from user_users;
+  select * from user_all_tables;
+  select * from all_users;
+  select * from dba_users;
+  SELECT table_name FROM all_tables WHERE owner = upper('ubak'); --查看某个用户下的所有表
+
 =======================> bash shell 快捷键
-生活在 Bash shell 中，熟记以下快捷键，将极大的提高你的命令行操作效率。
+在 Bash shell 中，熟记以下快捷键，将极大的提高你的命令行操作效率。
 
 编辑命令
 
@@ -2851,6 +3046,24 @@ declare -f function_name ##而declare -f function_name则只会列出指定的函数
 ln 建软链接
 ln -sf /ngbss/billdata/data5/ bdata #将bdata 链接到/ngbss/billdata/data5/目录
 
+------------>printf
+这里所说的printf是shell的内建命令,但跟C语言中的printf有很多相似的地方
+都是控制格式化输出
+
+---使用语法
+printf <FORMAT> <ARGUMENTS...>
+例如:
+a=$(echo "03 - 1"|bc)
+printf "%02d\n" "$a"
+
+使用 -v var 的形式,可以把输入作为一个变量,如:
+printf -v var "%s.dat" "aaaa"  ##在Linux bash下可以用,但是在AIX ksh下不可以
+
+
+----------->pr 命令
+pr命令能够快速的将一连串文本编排成合适打印的格式。这个工具的一个基本用途就是将较大的文件分割成多个页面，
+并为每个页面添加标题。pr是一个标准的输出工具，可以直接输出到打印机，如果希望将结果保存在文件中 ，
+则需要重定向它的输出
 
 ***shell脚本特殊参数
 位置参数：
@@ -3069,6 +3282,7 @@ s ： 进入函数体里面执行
 $ dbx pp core 
 >where  
 
+$ file core #查看core文件是哪个程序产生的
 
 ------------> gcc 编译器
 linux下的cc默认是指向gcc的。
@@ -3205,10 +3419,30 @@ Program exited with code 027. <--------程序退出，调试结束。
 
 
 ------------------->makefile
+第一行表示的是依赖关系。第二行是规则。
+makefile 有三个常用的变量,分别是 $@ ,$^ ,$< 
+$@ #目标文件
+$^ #所有的依赖文件
+$< #第一个依赖文件
+
+makefile 函数:
+
+wildcard #扩展通配符
+notdir  #去除路径
+patsubst #替换通配符
+
+如:
+src=$(wildcard *.c ./sub/*.c) ##指定目录 ./ 和 ./sub/ 下的所有后缀是c的文件全部展开
+dir=$(notdir $(src)) ##去掉文件前的路径
+obj=$(patsubst %.c,%.o,$(dir)) ##$(dir)中的变量符合后缀是.c的全部替换成.o
+
+
+
 <<跟我一起学Makefile>> -- 陈皓
 源文件到.o文件(中间代码文件)或者Windows下的.obj文件 --> 编译(compile)
 把中间代码文件合成执行文件 --> 链接(link)
 make命令执行时,需要一个Makefile文件,以告诉make命令需要怎样的编译和链接程序
+
 
 
 
@@ -3262,4 +3496,31 @@ git branch #不仅仅能创建和删除分支，如果不加任何参数，它会给出当前所有分支的清单
 -v #查看各个分支最后一个提交对象的信息
 git branch --merged ##查看哪些分支已被并入当前分支（也就是说哪些分支是当前分支的直接上游。）
 git branch --no-merged ##查看尚未合并的分支
+
+
+
+##=============================ChinaUnix 帖子=======================##
+[文本处理] 如何把一个文本每三行转换为一行？ 
+$ cat a.txt
+1
+2
+3
+4
+5
+6
+
+转换为:
+123
+456
+
+pr -taJ3 -S'' a.txt
+pr -taJ3 -S',' a.txt  ##以","为分割符
+sed '$!N;N;s/\n//g' a.txt
+sed 'N;N;s/\n//g' a.txt
+awk '{ORS=NR%3?"":RS}1' a.txt
+awk 'NR%3{printf $0"";next}1' a.txt
+awk '{printf (NR%3)?$0:$0"\n"}' a.txt
+awk '{if(NR%3!=0)ORS="";else ORS="\n"}1' a.txt
+awk '{printf (NR%3)==0?$0"\n":$0}' a.txt
+
 
