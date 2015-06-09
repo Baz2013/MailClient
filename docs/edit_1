@@ -17,6 +17,8 @@ AIX 时间戳
 &  ：表示等同于的意思，2>&1，表示2的输出重定向等同于1
 如：nohup sh test.sh >test.log 2>&1 &
 
+shell 命令 >/dev/null 2>&1 ##把标准错误等同于标准输出重定向到 /dev/null
+
 Unix/Linux下的常见问题及解决：
 同一路径下存在相同的文件名，但其中一个为空文件
 ls -l > a.txt
@@ -2474,6 +2476,12 @@ fi
 
 从脚本可以看出,先找用户目录下的.bashrc 和 .bash_profile文件，如果没有，最才找后找/etc/bash_profile文件
 
+/etc/profile : 在登录时,操作系统定制用户环境时使用的第一个文件 ,此文件为系统的每个用户设置环境信息,当用户第一次登录时,该文件被执行。
+/etc /environment : 在登录时操作系统使用的第二个文件, 系统在读取你自己的profile前,设置环境文件的环境变量。
+~/.profile : 在登录时用到的第三个文件 是.profile文件,每个用户都可使用该文件输入专用于自己使用的shell信息,当用户登录时,该文件仅仅执行一次!默认情况下,他设置一些环境变量,执行用户的.bashrc文件。
+/etc/bashrc : 为每一个运行bash shell的用户执行此文件.当bash shell被打开时,该文件被读取.
+~/.bashrc : 该文件包含专用于你的bash shell的bash信息,当登录时以及每次打开新的shell时,该该文件被读取
+
 
 ------------------perl
 替换
@@ -2733,6 +2741,13 @@ d - delete
 ------------>comm 命令
 
 比较 diff 和comm命令
+
+--------->timeout 命令
+timeout n(s) command
+  运行指定命令，如果在指定时间后仍在运行则杀死该进程。
+后缀"s"代表秒(默认值)，"m"代表分，"h"代表小时，"d"代表天
+如:
+timeout 2 ping www.google.com ##2秒后退出
 
 ------------->uptime 命令
 查看主机已经运行多长时间
@@ -3497,7 +3512,22 @@ git branch #不仅仅能创建和删除分支，如果不加任何参数，它会给出当前所有分支的清单
 git branch --merged ##查看哪些分支已被并入当前分支（也就是说哪些分支是当前分支的直接上游。）
 git branch --no-merged ##查看尚未合并的分支
 
+***git 创建分支
+git checkout -b develop master  ##创建一个develop分支
+git checkout develop #切换到develop分支
+git checkout master
 
+git merge --no-ff develop ##对develop分支进行合并
+
+注意: --no-ff 参数,
+默认情况,git执行"快进式合并",会直接将master分支指向develop分支
+使用 --no-ff 参数后,会执行正常合并,在master分支上生成一个新节点,保证了版本演进的清晰.
+
+
+***git tag
+
+git config -l ##列出本地git的配置
+git push --tag https://github.com/Baz2013/CommonShell.git
 
 ##=============================ChinaUnix 帖子=======================##
 [文本处理] 如何把一个文本每三行转换为一行？ 
