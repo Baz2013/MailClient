@@ -1868,6 +1868,8 @@ alter tablespace TBS_BIL_GS01 add datafile '/orabill2/ngbill/TBS_BIL_GS01_02.dbf
 ALTER DATABASE DATAFILE '/oraact2/ngact/TBS_ACT_USER.dbf' RESIZE 16G;
 
 
+-----Oracle查看某用户下表的数据量
+select table_name,row_nums from user_tables ;
 
 查看锁表语句
 SELECT SESS.SID,
@@ -3532,6 +3534,22 @@ git tag -a v0.1 -m 'description'
 git config -l ##列出本地git的配置
 git push --tag https://github.com/Baz2013/CommonShell.git
 
+-------将tag推送到远程仓库
+git tag 只是在本地打标签
+要把git tag同步到远程仓库需要是哪个git push 命令
+默认情况下git push 并不会把tag标签传送到远程仓库中,只有通过显示命令才能分享到远程仓库
+
+1.push 单个tag ,命令格式为 git push origin [tagname]
+例如:
+git push origin v1.0 ###将本地v1.0 的tag推送到远程服务器
+
+2. push 所有tag,命令格式为 git push [origin] --tags 
+例如:
+git push --tags 
+或
+git push origin --tags 
+
+
 ##=============================ChinaUnix 帖子=======================##
 [文本处理] 如何把一个文本每三行转换为一行？ 
 $ cat a.txt
@@ -3556,4 +3574,14 @@ awk '{printf (NR%3)?$0:$0"\n"}' a.txt
 awk '{if(NR%3!=0)ORS="";else ORS="\n"}1' a.txt
 awk '{printf (NR%3)==0?$0"\n":$0}' a.txt
 
+
+====================2015-06-29 start===================================================================================
+
+----> file 命令
+file 命令可以检查具体文件类型
+file filename
+
+查找当前目录下所有的可执行文件
+ls -l|awk '{print $9}'|xargs file|grep ELF|awk '{print $1}'|tr -d ':' ##Linux 系统下
+ls -l|awk '{print $9}'|xargs file|grep XCOFF|awk '{print $1}'|tr -d ':'  ##AIX 系统下
 
