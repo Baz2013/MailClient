@@ -3145,6 +3145,7 @@ rm mv.sh
 
 
 awk引用外部变量(生成前导0数字序列)
+参考:http://www.cppblog.com/prayer/archive/2010/08/26/124862.html
 echo "" | awk '{for(i=1;i<=1000;i++)printf "%04d\n",i}'
 echo "" | awk '{for(i=0;i<=9999;i++)printf ("%s%04d\n",v1,i)}' v1="$file" ##file=1300000
 
