@@ -3586,3 +3586,10 @@ file filename
 ls -l|awk '{print $9}'|xargs file|grep ELF|awk '{print $1}'|tr -d ':' ##Linux 系统下
 ls -l|awk '{print $9}'|xargs file|grep XCOFF|awk '{print $1}'|tr -d ':'  ##AIX 系统下
 
+
+##获取前一天的日期
+yesterday=`aa24 date +%Y%m%d` ##AIX ksh 下
+d2=`date -d yesterday +%Y%m%d` ##  Linux bash
+
+##获取两天前的日期
+d3=`date -d -2day +%Y%m%d`  ##Linux bash
